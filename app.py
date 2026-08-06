@@ -73,18 +73,17 @@ selected_center = st.sidebar.selectbox("Target Hawker Centre Location:", center_
 # --- POSTGRES CONVERSION STEP 2: CACHED TELEMETRY INGESTION ---
 @st.cache_data(ttl=300)
 def load_master_telemetry(selected_center, selected_div):
-    supabase_uri = st.secrets["SUPABASE_URI"]
-    conn = psycopg2.connect(supabase_uri)
-    
-    # Base query template matching your exact core fields structure
+    # Base query template matching your exact columns in precise order
     sql_base = """
-        SELECT t.*, r.latitude, r.longitude, r.photo_url, r.postal_code, r.address, r.constituency 
+        SELECT t.timestamp, t.nea_division, t.hawker_centre, t.stall_id, t.zone_cluster, 
+               t.fill_level, t.lid_breaches_count, t.rat_detections_count, t.pir_wakeups_count, t.deterrence_triggered,
+               r.latitude, r.longitude, r.photo_url, r.postal_code, r.address, r.constituency 
         FROM nea_telemetry t
         JOIN hawker_registry r ON t.hawker_centre = r.hawker_centre
     """
     params = []
     
-    # Construct parameterized filtering constraints to prevent query execution crashes
+    # Construct parameterized filtering constraints
     if selected_center == 'All Centres (Global View)':
         if selected_div != 'All NEA Regional Offices':
             sql_base += " WHERE t.nea_division = %s"
@@ -93,22 +92,30 @@ def load_master_telemetry(selected_center, selected_div):
         sql_base += " WHERE t.hawker_centre = %s"
         params.append(selected_center)
         
-    # Read the data arrays seamlessly into pandas using safe tuple execution params
-    df = pd.read_sql_query(sql_base, conn, params=params if params else None)
-    conn.close()
-    return df
+    # Fetch the raw rows using our bulletproof query runner
+    raw_rows = run_query(sql_base, tuple(params) if params else None)
+    
+    # Map the columns explicitly to match your original database structure perfectly
+    cols = [
+        'timestamp', 'nea_division', 'hawker_centre', 'stall_id', 'zone_cluster',
+        'fill_level', 'lid_breaches_count', 'rat_detections_count', 'pir_wakeups_count', 'deterrence_triggered',
+        'latitude', 'longitude', 'photo_url', 'postal_code', 'address', 'constituency'
+    ]
+    return pd.DataFrame(raw_rows, columns=cols)
+
 
 # --- POSTGRES CONVERSION STEP 3: CACHED MAP REGISTRY INGESTION ---
 @st.cache_data(ttl=600)
 def load_map_registry(selected_div):
-    supabase_uri = st.secrets["SUPABASE_URI"]
-    conn = psycopg2.connect(supabase_uri)
     if selected_div == 'All NEA Regional Offices':
-        df_map_view = pd.read_sql_query("SELECT * FROM hawker_registry;", conn)
+        sql = "SELECT hawker_centre, nea_division, latitude, longitude, photo_url, postal_code, address, constituency FROM hawker_registry;"
+        raw_rows = run_query(sql)
     else:
-        df_map_view = pd.read_sql_query("SELECT * FROM hawker_registry WHERE nea_division = %s;", conn, params=(selected_div,))
-    conn.close()
-    return df_map_view
+        sql = "SELECT hawker_centre, nea_division, latitude, longitude, photo_url, postal_code, address, constituency FROM hawker_registry WHERE nea_division = %s;"
+        raw_rows = run_query(sql, (selected_div,))
+        
+    cols = ['hawker_centre', 'nea_division', 'latitude', 'longitude', 'photo_url', 'postal_code', 'address', 'constituency']
+    return pd.DataFrame(raw_rows, columns=cols)
 
 @st.cache_resource
 def generate_gis_map(map_data, color_target, hover_name_val, hover_data_list, zoom_level):
@@ -129,26 +136,24 @@ def generate_gis_map(map_data, color_target, hover_name_val, hover_data_list, zo
     return fig_map
 
 # SYSTEM FIX: Execute performance-caching channels from memory to eliminate client boot latency
-df = load_master_telemetry(selected_center, selected_div)
+master_df = load_master_telemetry(selected_center, selected_div)
 df_map_view = load_map_registry(selected_div)
 
 # --- POSTGRES CONVERSION STEP 4: STATIC THRESHOLDS & GLOBAL SNAPSHOTS ---
-supabase_uri = st.secrets["SUPABASE_URI"]
-conn = psycopg2.connect(supabase_uri)
+# 1. Fetch system configuration keys natively using our clean query runner
+config_rows = run_query("SELECT key, value FROM system_config;")
+system_configs = dict(config_rows)
 
-# Fetch system configuration keys natively from the cloud container tables
-system_configs = pd.read_sql_query("SELECT key, value FROM system_config;", conn).set_index('key')['value'].to_dict()
-
-# Optimized subquery using explicit timestamp formatting cast to fetch your latest real-time records
-latest_snapshots = pd.read_sql_query("""
+# 2. Fetch your latest real-time records and map the fields directly into a DataFrame
+snapshot_rows = run_query("""
     SELECT t.hawker_centre, 
            MAX(CASE WHEN t.stall_id = 'MASTER_NODE' THEN t.rat_detections_count ELSE 0 END) as total_rats,
            SUM(CASE WHEN t.stall_id != 'MASTER_NODE' THEN t.lid_breaches_count ELSE 0 END) as total_lids
     FROM nea_telemetry t
     WHERE t.timestamp = (SELECT MAX(timestamp) FROM nea_telemetry WHERE stall_id = 'MASTER_NODE')
     GROUP BY t.hawker_centre;
-""", conn)
-conn.close()
+""")
+latest_snapshots = pd.DataFrame(snapshot_rows, columns=['hawker_centre', 'total_rats', 'total_lids'])
 
 df['timestamp'] = pd.to_datetime(df['timestamp'])
 
