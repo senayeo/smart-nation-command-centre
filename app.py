@@ -16,10 +16,21 @@ BASE64_IMAGE = "/9j/4AAQSkZJRgABAQEAYABgAAD/4QAiRXhpZgAATU0AKgAAAAgAAQESAAMAAAAB
 
 st.set_page_config(page_title="Smart Waste & Rodent Prevention Console", layout="wide", page_icon="🇸🇬")
 
-# --- STEP 2 SYSTEM FIX: Verifies that the Git LFS data pointer is fully initialized before parsing the layout ---
+import urllib.request
+
+# The working data asset target mapping your main repository LFS file through GitHub's raw media link proxy
+db_download_url = "https://githubusercontent.com"
+
+# SYSTEM FIX: Overwrites any 1KB Git LFS tracking pointers with your true 327MB production file binary blocks
 if not os.path.exists(DB_FILE) or os.path.getsize(DB_FILE) < 10000:
-    st.info("⏳ Synchronizing local smart nation database blocks... Please reload in a moment.")
-    st.stop()
+    status_placeholder = st.empty()
+    status_placeholder.info("⏳ Synchronizing local smart nation database blocks... Please Wait.")
+    try:
+        # High-speed server-to-server network cloud transfer pipeline download execution
+        urllib.request.urlretrieve(db_download_url, DB_FILE)
+        status_placeholder.empty()
+    except Exception as e:
+        status_placeholder.error(f"❌ Core Node Connection Error: {str(e)}")
 
 st.markdown("""
     <style>
