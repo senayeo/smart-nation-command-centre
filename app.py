@@ -18,15 +18,26 @@ st.set_page_config(page_title="Smart Waste & Rodent Prevention Console", layout=
 
 import psycopg2
 
-# SYSTEM FIX: Establishes an encrypted, safe connection connection line directly to your Singapore database
-def get_db_connection():
+def run_query(query, params=None):
+    supabase_uri = st.secrets["SUPABASE_URI"]
+    # Open connection
+    conn = psycopg2.connect(supabase_uri)
+    cursor = conn.cursor()
     try:
-        # Extracts your secret connection URI variable natively from your Streamlit cloud management panel vault
-        supabase_uri = st.secrets["SUPABASE_URI"]
-        return psycopg2.connect(supabase_uri)
+        if params:
+            cursor.execute(query, params)
+        else:
+            cursor.execute(query)
+        # Fetch data immediately before closing connection lines
+        results = cursor.fetchall()
+        return results
     except Exception as e:
-        st.error(f"❌ Cloud Core Node Connection Failure: {str(e)}")
-        st.stop()
+        st.error(f"❌ Query execution failed: {str(e)}")
+        return []
+    finally:
+        # Guarantee memory blocks close perfectly to prevent leaking database connections
+        cursor.close()
+        conn.close()
 
 st.markdown("""
     <style>
@@ -47,50 +58,55 @@ st.sidebar.markdown("<p style='font-size:11px; color:#7f8c8d; margin-top:5px; ma
 div_options = ["All NEA Regional Offices", "Central Regional Office (CRO)", "North West Regional Office (NWRO)", "North East Regional Office (NERO)", "South West Regional Office (SWRO)", "South East Regional Office (SERO)"]
 selected_div = st.sidebar.selectbox("NEA Regional Office:", div_options)
 
-conn = get_db_connection()
-if selected_div == 'All NEA Regional Offices':
-    center_query = "SELECT hawker_centre FROM hawker_registry ORDER BY hawker_centre"
+# --- POSTGRES CONVERSION STEP 1: DROPDOWN ROUTING LOGIC ---
+if selected_div == "All NEA Regional Offices":
+    center_query = "SELECT hawker_centre FROM hawker_registry ORDER BY hawker_centre;"
+    center_rows = run_query(center_query)
 else:
-    center_query = f'SELECT hawker_centre FROM hawker_registry WHERE nea_division = "{selected_div}" ORDER BY hawker_centre'
+    center_query = "SELECT hawker_centre FROM hawker_registry WHERE nea_division = %s ORDER BY hawker_centre;"
+    center_rows = run_query(center_query, (selected_div,))
 
-center_rows = conn.execute(center_query).fetchall()
-center_list = ['All Centres (Global View)'] + [r for (r,) in center_rows]
+# Convert the resulting list of data tuples seamlessly into flat text layout strings
+center_list = ["All Centres (Global View)"] + [row[0] for row in center_rows]
 selected_center = st.sidebar.selectbox("Target Hawker Centre Location:", center_list)
-conn.close()
 
-# --- SYSTEM PERFORMANCE CACHING INFRASTRUCTURE ---
+# --- POSTGRES CONVERSION STEP 2: CACHED TELEMETRY INGESTION ---
 @st.cache_data(ttl=300)
 def load_master_telemetry(selected_center, selected_div):
-    conn = get_db_connection()
+    supabase_uri = st.secrets["SUPABASE_URI"]
+    conn = psycopg2.connect(supabase_uri)
+    
+    # Base query template matching your exact core fields structure
+    sql_base = """
+        SELECT t.*, r.latitude, r.longitude, r.photo_url, r.postal_code, r.address, r.constituency 
+        FROM nea_telemetry t
+        JOIN hawker_registry r ON t.hawker_centre = r.hawker_centre
+    """
+    params = []
+    
+    # Construct parameterized filtering constraints to prevent query execution crashes
     if selected_center == 'All Centres (Global View)':
-        sql_base = """
-            SELECT t.*, r.latitude, r.longitude, r.photo_url, r.postal_code, r.address, r.constituency 
-            FROM nea_telemetry t
-            JOIN hawker_registry r ON t.hawker_centre = r.hawker_centre
-        """
-        filters = []
-        if selected_div != 'All NEA Regional Offices': 
-            filters.append(f't.nea_division = "{selected_div}"')
-        if filters: 
-            sql_base += " WHERE " + " AND ".join(filters)
+        if selected_div != 'All NEA Regional Offices':
+            sql_base += " WHERE t.nea_division = %s"
+            params.append(selected_div)
     else:
-        sql_base = f"""
-            SELECT t.*, r.latitude, r.longitude, r.photo_url, r.postal_code, r.address, r.constituency 
-            FROM nea_telemetry t
-            JOIN hawker_registry r ON t.hawker_centre = r.hawker_centre
-            WHERE t.hawker_centre = "{selected_center}"
-        """
-    df = pd.read_sql_query(sql_base, conn)
+        sql_base += " WHERE t.hawker_centre = %s"
+        params.append(selected_center)
+        
+    # Read the data arrays seamlessly into pandas using safe tuple execution params
+    df = pd.read_sql_query(sql_base, conn, params=params if params else None)
     conn.close()
     return df
 
+# --- POSTGRES CONVERSION STEP 3: CACHED MAP REGISTRY INGESTION ---
 @st.cache_data(ttl=600)
 def load_map_registry(selected_div):
-    conn = get_db_connection()
+    supabase_uri = st.secrets["SUPABASE_URI"]
+    conn = psycopg2.connect(supabase_uri)
     if selected_div == 'All NEA Regional Offices':
-        df_map_view = pd.read_sql_query("SELECT * FROM hawker_registry", conn)
+        df_map_view = pd.read_sql_query("SELECT * FROM hawker_registry;", conn)
     else:
-        df_map_view = pd.read_sql_query(f'SELECT * FROM hawker_registry WHERE nea_division = "{selected_div}"', conn)
+        df_map_view = pd.read_sql_query("SELECT * FROM hawker_registry WHERE nea_division = %s;", conn, params=(selected_div,))
     conn.close()
     return df_map_view
 
@@ -116,16 +132,21 @@ def generate_gis_map(map_data, color_target, hover_name_val, hover_data_list, zo
 df = load_master_telemetry(selected_center, selected_div)
 df_map_view = load_map_registry(selected_div)
 
-# Open direct lightweight connection layer to pre-fetch remaining static thresholds globally
-conn = get_db_connection()
-system_configs = pd.read_sql_query("SELECT key, value FROM system_config", conn).set_index('key')['value'].to_dict()
+# --- POSTGRES CONVERSION STEP 4: STATIC THRESHOLDS & GLOBAL SNAPSHOTS ---
+supabase_uri = st.secrets["SUPABASE_URI"]
+conn = psycopg2.connect(supabase_uri)
+
+# Fetch system configuration keys natively from the cloud container tables
+system_configs = pd.read_sql_query("SELECT key, value FROM system_config;", conn).set_index('key')['value'].to_dict()
+
+# Optimized subquery using explicit timestamp formatting cast to fetch your latest real-time records
 latest_snapshots = pd.read_sql_query("""
     SELECT t.hawker_centre, 
            MAX(CASE WHEN t.stall_id = 'MASTER_NODE' THEN t.rat_detections_count ELSE 0 END) as total_rats,
            SUM(CASE WHEN t.stall_id != 'MASTER_NODE' THEN t.lid_breaches_count ELSE 0 END) as total_lids
     FROM nea_telemetry t
     WHERE t.timestamp = (SELECT MAX(timestamp) FROM nea_telemetry WHERE stall_id = 'MASTER_NODE')
-    GROUP BY t.hawker_centre
+    GROUP BY t.hawker_centre;
 """, conn)
 conn.close()
 
