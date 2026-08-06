@@ -19,7 +19,7 @@ st.set_page_config(page_title="Smart Waste & Rodent Prevention Console", layout=
 import urllib.request
 
 # The working data asset target mapping your main repository LFS file through GitHub's raw media link proxy
-db_download_url = "https://githubusercontent.com"
+db_download_url = "https://github.com/senayeo/smart-nation-command-centre/blob/main/smart_waste_nationwide.db"
 
 # SYSTEM FIX: Overwrites any 1KB Git LFS tracking pointers with your true 327MB production file binary blocks
 if not os.path.exists(DB_FILE) or os.path.getsize(DB_FILE) < 10000:
