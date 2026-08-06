@@ -16,21 +16,17 @@ BASE64_IMAGE = "/9j/4AAQSkZJRgABAQEAYABgAAD/4QAiRXhpZgAATU0AKgAAAAgAAQESAAMAAAAB
 
 st.set_page_config(page_title="Smart Waste & Rodent Prevention Console", layout="wide", page_icon="🇸🇬")
 
-import urllib.request
+import psycopg2
 
-# The working data asset target mapping your main repository LFS file through GitHub's raw media link proxy
-db_download_url = "https://github.com/senayeo/smart-nation-command-centre/blob/main/smart_waste_nationwide.db"
-
-# SYSTEM FIX: Overwrites any 1KB Git LFS tracking pointers with your true 327MB production file binary blocks
-if not os.path.exists(DB_FILE) or os.path.getsize(DB_FILE) < 10000:
-    status_placeholder = st.empty()
-    status_placeholder.info("⏳ Synchronizing local smart nation database blocks... Please Wait.")
+# SYSTEM FIX: Establishes an encrypted, safe connection connection line directly to your Singapore database
+def get_db_connection():
     try:
-        # High-speed server-to-server network cloud transfer pipeline download execution
-        urllib.request.urlretrieve(db_download_url, DB_FILE)
-        status_placeholder.empty()
+        # Extracts your secret connection URI variable natively from your Streamlit cloud management panel vault
+        supabase_uri = st.secrets["SUPABASE_URI"]
+        return psycopg2.connect(supabase_uri)
     except Exception as e:
-        status_placeholder.error(f"❌ Core Node Connection Error: {str(e)}")
+        st.error(f"❌ Cloud Core Node Connection Failure: {str(e)}")
+        st.stop()
 
 st.markdown("""
     <style>
@@ -51,7 +47,7 @@ st.sidebar.markdown("<p style='font-size:11px; color:#7f8c8d; margin-top:5px; ma
 div_options = ["All NEA Regional Offices", "Central Regional Office (CRO)", "North West Regional Office (NWRO)", "North East Regional Office (NERO)", "South West Regional Office (SWRO)", "South East Regional Office (SERO)"]
 selected_div = st.sidebar.selectbox("NEA Regional Office:", div_options)
 
-conn = sqlite3.connect(DB_FILE)
+conn = get_db_connection()
 if selected_div == 'All NEA Regional Offices':
     center_query = "SELECT hawker_centre FROM hawker_registry ORDER BY hawker_centre"
 else:
@@ -65,7 +61,7 @@ conn.close()
 # --- SYSTEM PERFORMANCE CACHING INFRASTRUCTURE ---
 @st.cache_data(ttl=300)
 def load_master_telemetry(selected_center, selected_div):
-    conn = sqlite3.connect(DB_FILE)
+    conn = get_db_connection()
     if selected_center == 'All Centres (Global View)':
         sql_base = """
             SELECT t.*, r.latitude, r.longitude, r.photo_url, r.postal_code, r.address, r.constituency 
@@ -90,7 +86,7 @@ def load_master_telemetry(selected_center, selected_div):
 
 @st.cache_data(ttl=600)
 def load_map_registry(selected_div):
-    conn = sqlite3.connect(DB_FILE)
+    conn = get_db_connection()
     if selected_div == 'All NEA Regional Offices':
         df_map_view = pd.read_sql_query("SELECT * FROM hawker_registry", conn)
     else:
@@ -121,7 +117,7 @@ df = load_master_telemetry(selected_center, selected_div)
 df_map_view = load_map_registry(selected_div)
 
 # Open direct lightweight connection layer to pre-fetch remaining static thresholds globally
-conn = sqlite3.connect(DB_FILE)
+conn = get_db_connection()
 system_configs = pd.read_sql_query("SELECT key, value FROM system_config", conn).set_index('key')['value'].to_dict()
 latest_snapshots = pd.read_sql_query("""
     SELECT t.hawker_centre, 
