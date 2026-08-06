@@ -9,9 +9,6 @@ from datetime import datetime
 import os
 from assets import BASE64_IMAGE
 
-# Central system parameter defining your local SQLite database architecture
-DB_FILE = "smart_waste_nationwide.db"
-
 st.set_page_config(page_title="Smart Waste & Rodent Prevention Console", layout="wide", page_icon="🇸🇬")
 
 import psycopg2
