@@ -155,7 +155,7 @@ snapshot_rows = run_query("""
 """)
 latest_snapshots = pd.DataFrame(snapshot_rows, columns=['hawker_centre', 'total_rats', 'total_lids'])
 
-df['timestamp'] = pd.to_datetime(df['timestamp'])
+master_df['timestamp'] = pd.to_datetime(master_df['timestamp'])
 
 # --- SIDEBAR OFFICE METADATA ARRAYS ---
 if selected_div != 'All NEA Regional Offices':
@@ -179,26 +179,26 @@ if selected_div != 'All NEA Regional Offices':
         </div>
     """, unsafe_allow_html=True)
 
-if selected_center != 'All Centres (Global View)' and not df.empty:
+if selected_center != 'All Centres (Global View)' and not master_df.empty:
     st.sidebar.markdown("<hr>", unsafe_allow_html=True)
     st.sidebar.markdown(f"<p style='font-size:12px; color:#102542; font-weight:bold; margin-bottom:4px;'>📍 PHOTO FEED: {selected_center}</p>", unsafe_allow_html=True)
     
-    unique_stalls_count = len(df['stall_id'].unique())
-    active_mesh_zones = sorted([str(x) for x in df['zone_cluster'].dropna().unique()])
+    unique_stalls_count = len(master_df['stall_id'].unique())
+    active_mesh_zones = sorted([str(x) for x in master_df['zone_cluster'].dropna().unique()])
     zones_list_str = "Zone " + ", ".join(active_mesh_zones)
     
     # SYSTEM FIX: Appended index brackets [0] onto .iloc to extract raw values and permanently stop the browser rendering freeze
     st.sidebar.markdown(f"""
         <div style='font-size:13px; line-height:1.4; margin-bottom:8px;'>
-            <b>Constituency:</b> {df['constituency'].iloc[0]}<br>
-            <b>Street Address:</b> {df['address'].iloc[0]}<br>
+            <b>Constituency:</b> {master_df['constituency'].iloc[0]}<br>
+            <b>Street Address:</b> {master_df['address'].iloc[0]}<br>
             <b>Number of Food Stalls:</b> {unique_stalls_count}<br>
             <b>Tray Return Stations:</b> {zones_list_str}
         </div>
     """, unsafe_allow_html=True)
     
     # SYSTEM FIX: Appended index bracket [0] to safely convert url records to flat strings
-    raw_img_url = str(df['photo_url'].iloc[0]).strip()
+    raw_img_url = str(master_df['photo_url'].iloc[0]).strip()
     if not raw_img_url or raw_img_url == "None" or raw_img_url == "":
         st.sidebar.markdown(f'<img src="data:image/jpeg;base64,{BASE64_IMAGE}" style="width:100%; border-radius:4px;" />', unsafe_allow_html=True)
     else:
@@ -221,16 +221,16 @@ with m4:
 st.markdown("<br>", unsafe_allow_html=True)
 st.markdown("<h4 style='color: #102542; font-family: Arial; margin-bottom: 10px;'>📍 Geospatial Information System (GIS) Hotspot Map</h4>", unsafe_allow_html=True)
 
-conn_map = sqlite3.connect(DB_FILE)
-latest_snapshots = pd.read_sql_query("""
+# --- POSTGRES CONVERSION: MAP LAYER SNAPSHOTS ---
+snapshot_map_rows = run_query("""
     SELECT t.hawker_centre, 
            MAX(CASE WHEN t.stall_id = 'MASTER_NODE' THEN t.rat_detections_count ELSE 0 END) as total_rats,
            SUM(CASE WHEN t.stall_id != 'MASTER_NODE' THEN t.lid_breaches_count ELSE 0 END) as total_lids
     FROM nea_telemetry t
     WHERE t.timestamp = (SELECT MAX(timestamp) FROM nea_telemetry WHERE stall_id = 'MASTER_NODE')
-    GROUP BY t.hawker_centre
-""", conn_map)
-conn_map.close()
+    GROUP BY t.hawker_centre;
+""")
+latest_snapshots = pd.DataFrame(snapshot_map_rows, columns=['hawker_centre', 'total_rats', 'total_lids'])
 
 # --- EXECUTE OPTIMIZED GIS MAP RENDERER FROM MEMORY CACHE ---
 if selected_center == 'All Centres (Global View)':
@@ -648,24 +648,27 @@ col_chart5, col_chart6 = st.columns(2)
 current_relay_limit = float(system_configs.get('relay_threshold', 8.0))
 
 with col_chart5:
-    # --- ORIGINAL UNALTERED CHART 5 DATA INGESTION SUITE ---
-    conn_c5 = sqlite3.connect(DB_FILE)
+    # --- POSTGRES CONVERSION: CHART 5 DETERRENCE ---
+    supabase_uri = st.secrets["SUPABASE_URI"]
+    conn_c5 = psycopg2.connect(supabase_uri)
     
-    # SYSTEM FIX: Dynamically handles the subquery scoping logic to strip out the invalid outer 't1.' table alias from the inner join
-    subquery_filter = center_filter_clause.replace("t1.hawker_centre", "hawker_centre")
-    
-    zone_deter = pd.read_sql_query("""
-        SELECT t1.zone_cluster, t1.rat_detections_count, t1.deterrence_triggered
-        FROM nea_telemetry t1
-        INNER JOIN (
-            SELECT zone_cluster, MAX(rowid) as max_id
-            FROM nea_telemetry
-            WHERE """ + subquery_filter + """ AND stall_id = 'MASTER_NODE'
-            GROUP BY zone_cluster
-        ) t2 ON t1.rowid = t2.max_id
-        WHERE """ + center_filter_clause + """ AND t1.stall_id = 'MASTER_NODE'
-        ORDER BY t1.zone_cluster
-    """, conn_c5, params=chart_params + chart_params)
+    if selected_center == 'All Centres (Global View)':
+        target_centers = list(master_df[master_df['stall_id'] == 'MASTER_NODE'].groupby('hawker_centre')['rat_detections_count'].sum().nlargest(10).index)
+        placeholders = ",".join(["%s"] * len(target_centers))
+        sql_c5 = f"""
+            SELECT t.zone_cluster, t.rat_detections_count, t.deterrence_triggered
+            FROM nea_telemetry t
+            WHERE t.hawker_centre IN ({placeholders}) AND t.stall_id = 'MASTER_NODE';
+        """
+        zone_deter = pd.read_sql_query(sql_c5, conn_c5, params=tuple(target_centers))
+    else:
+        sql_c5 = """
+            SELECT t.zone_cluster, t.rat_detections_count, t.deterrence_triggered
+            FROM nea_telemetry t
+            WHERE t.hawker_centre = %s AND t.stall_id = 'MASTER_NODE';
+        """
+        zone_deter = pd.read_sql_query(sql_c5, conn_c5, params=(selected_center,))
+        
     conn_c5.close()
 
     if zone_deter.empty:
@@ -673,10 +676,10 @@ with col_chart5:
 
     zone_deter['ineffective_cycles'] = zone_deter.apply(lambda r: max(0, int(r['rat_detections_count']) - int(r['deterrence_triggered'])), axis=1)
     bar_colors = ['#E74C3C' if val > current_relay_limit else '#2ECC71' for val in zone_deter['ineffective_cycles']]
-    
+
     fig_c5 = go.Figure()
     fig_c5.add_trace(go.Bar(x=zone_deter['zone_cluster'], y=zone_deter['ineffective_cycles'], name='Ineffective Cycles', marker_color=bar_colors))
-    
+
     # SHAPE 1: SLA Target Limit Line mapping threshold rules clearly over your cluster tracks
     fig_c5.add_shape(
         type="line", x0=-0.5, x1=len(zone_deter['zone_cluster'])-0.5, 
@@ -684,7 +687,7 @@ with col_chart5:
         line=dict(color="#C0392B", width=3, dash="dash"), 
         name="SLA Target Limit"
     )
-    
+
     fig_c5.update_layout(
         title="Ineffective Deterrence Countermeasure Cycles by Mesh Cluster Zone",
         font_family="Arial", 
@@ -792,11 +795,11 @@ else:
     """, unsafe_allow_html=True)
 
 # --- ROW 4: DYNAMIC COMPOSITE RISK INTELLIGENCE MATRIX (CHART 7) ---
-conn_threat = sqlite3.connect(DB_FILE)
+# --- POSTGRES CONVERSION STEP 3A: CHART 7 GLOBAL THREAT INGESTION ---
 
 if selected_center == 'All Centres (Global View)':
-    # 1. GLOBAL SQL QUERY: Aggregates features at the hawker centre level nationwide
-    threat_data = pd.read_sql_query("""
+    # GLOBAL SQL QUERY: Aggregates features at the hawker centre level nationwide
+    sql_threat = """
         SELECT 
             hawker_centre AS location_key,
             AVG(fill_level) AS fill_level,
@@ -804,8 +807,10 @@ if selected_center == 'All Centres (Global View)':
             SUM(rat_detections_count) AS rat_detections_count
         FROM nea_telemetry
         WHERE stall_id = 'MASTER_NODE'
-        GROUP BY hawker_centre
-    """, conn_threat)
+        GROUP BY hawker_centre;
+    """
+    threat_rows = run_query(sql_threat)
+    threat_data = pd.DataFrame(threat_rows, columns=['location_key', 'fill_level', 'lid_breaches_count', 'rat_detections_count'])
     
     # Compute composite vector outbreak public health risk score mapping
     threat_data['threat_index'] = (threat_data['fill_level'] * 0.2) + (threat_data['lid_breaches_count'] * 1.5) + (threat_data['rat_detections_count'] * 20.0)
@@ -839,7 +844,10 @@ if selected_center == 'All Centres (Global View)':
     )
 else:
     # SYSTEM FIX: Resolves binding crash by querying the database using a direct string match instead of parameterized inputs
-    threat_data = pd.read_sql_query(f"""
+    # --- POSTGRES CONVERSION STEP 3B: CHART 7 LOCALIZED THREAT INGESTION ---
+    supabase_uri = st.secrets["SUPABASE_URI"]
+    conn_threat = psycopg2.connect(supabase_uri)
+    sql_threat = """
         SELECT 
             t1.zone_cluster AS location_key,
             t1.fill_level,
@@ -847,12 +855,15 @@ else:
             t1.rat_detections_count
         FROM nea_telemetry t1
         INNER JOIN (
-            SELECT zone_cluster, MAX(rowid) AS max_id
+            SELECT zone_cluster, MAX(id) AS max_id
             FROM nea_telemetry
-            WHERE hawker_centre = "{selected_center}" AND stall_id = 'MASTER_NODE'
+            WHERE hawker_centre = %s AND stall_id = 'MASTER_NODE'
             GROUP BY zone_cluster
-        ) t2 ON t1.rowid = t2.max_id
-    """, conn_threat)
+        ) t2 ON t1.id = t2.max_id;
+    """
+
+    threat_data = pd.read_sql_query(sql_threat, conn_threat, params=(selected_center,))
+    conn_threat.close()
     
     if threat_data.empty:
         threat_data = pd.DataFrame([{'location_key': z, 'fill_level': 0, 'lid_breaches_count': 0, 'rat_detections_count': 0} for z in ['A','B','C','D','E','F']])
@@ -882,26 +893,43 @@ else:
         yaxis=dict(title="Vector Threat Index Score", range=[0, max(70, chart_data['threat_index'].max() * 1.25)])
     )
 
-conn_threat.close()
 st.plotly_chart(fig_c7, width="stretch")
 
 # --- RE-APPEND THE TIME-SERIES STREAM LOG DATA DATA GRIDS ---
 st.markdown("<br><hr>", unsafe_allow_html=True)
 st.subheader("📋 Granular Time-Series Network Data Stream Log")
 
-conn_log = sqlite3.connect(DB_FILE)
+# --- POSTGRES CONVERSION STEP 4: BOTTOM STREAM DATA LOGS ---
+supabase_uri = st.secrets["SUPABASE_URI"]
+conn_log = psycopg2.connect(supabase_uri)
+
 if selected_center == 'All Centres (Global View)':
-    # SYSTEM FIX: Extracts the clean global log queue directly with zero leading spaces on root parameters
-    df_log = pd.read_sql_query("SELECT * FROM nea_telemetry", conn_log)
+    # SYSTEM FIX: Enforces a strict SQL syntax format compatible with your migrated Supabase columns
+    sql_log = """
+        SELECT id, timestamp, nea_division, hawker_centre, stall_id, zone_cluster, 
+               fill_level, lid_breaches_count, rat_detections_count, pir_wakeups_count, deterrence_triggered 
+        FROM nea_telemetry 
+        ORDER BY timestamp DESC 
+        LIMIT 100;
+    """
+    df_log = pd.read_sql_query(sql_log, conn_log)
 else:
-    # SYSTEM FIX: Directly queries by matching the selected centre string to eliminate binding parameter crashes
-    df_log = pd.read_sql_query(f'SELECT * FROM nea_telemetry WHERE hawker_centre = "{selected_center}"', conn_log)
+    sql_log = """
+        SELECT id, timestamp, nea_division, hawker_centre, stall_id, zone_cluster, 
+               fill_level, lid_breaches_count, rat_detections_count, pir_wakeups_count, deterrence_triggered 
+        FROM nea_telemetry 
+        WHERE hawker_centre = %s 
+        ORDER BY timestamp DESC 
+        LIMIT 100;
+    """
+    df_log = pd.read_sql_query(sql_log, conn_log, params=(selected_center,))
+
 conn_log.close()
 
 if not df_log.empty:
     df_log['timestamp'] = pd.to_datetime(df_log['timestamp'])
     st.dataframe(
-        df_log.sort_values(by='timestamp', ascending=False).head(20), 
+        df_log, 
         width="stretch", 
         hide_index=True
     )
