@@ -66,7 +66,7 @@ center_list = ["All Centres (Global View)"] + [row[0] for row in center_rows]
 selected_center = st.sidebar.selectbox("Target Hawker Centre Location:", center_list)
 
 # --- POSTGRES CONVERSION STEP 2: CACHED TELEMETRY INGESTION ---
-@st.cache_data(ttl=300)
+# @st.cache_data(ttl=300)
 def load_master_telemetry(selected_center, selected_div):
     # Base query template matching your exact columns in precise order
     sql_base = """
@@ -100,7 +100,7 @@ def load_master_telemetry(selected_center, selected_div):
 
 
 # --- POSTGRES CONVERSION STEP 3: CACHED MAP REGISTRY INGESTION ---
-@st.cache_data(ttl=600)
+# @st.cache_data(ttl=600)
 def load_map_registry(selected_div):
     if selected_div == 'All NEA Regional Offices':
         sql = "SELECT hawker_centre, nea_division, latitude, longitude, photo_url, postal_code, address, constituency FROM hawker_registry;"
