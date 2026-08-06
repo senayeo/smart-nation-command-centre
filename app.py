@@ -6,6 +6,7 @@ import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 import math
 from datetime import datetime
+import os
 
 # Central system parameter defining your local SQLite database architecture
 DB_FILE = "smart_waste_nationwide.db"
