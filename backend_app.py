@@ -48,7 +48,15 @@ def init_system_config_tables():
 init_system_config_tables()
 
 st.title("📡 Smart Nation Public Hygiene SensorGrid Hub")
-st.caption("🔒 RESTRICTED ACCESS • DEVELOPER UAT SANDBOX <br> 🏢 AUTHORIZED GOVTECH / OGP SYSTEMS ENGINEERING EVALUATION PORTAL <br> 📦 Framework Module: Independent Simulation Pipeline Engine for Mock Telemetry Data Ingestion Architecture", unsafe_allow_html=True)
+st.markdown("""
+    <div style='font-family: Arial, sans-serif; font-size: 11px; color: #7F8C8D; line-height: 1.5; margin-top: -15px; margin-bottom: 25px;'>
+        <div style='display: inline-block; background-color: #FFF0F0; color: #C0392B; border: 1px solid #E74C3C; padding: 3px 8px; border-radius: 4px; font-weight: bold; font-size: 10px; margin-bottom: 8px; letter-spacing: 0.5px;'>
+            🔒 RESTRICTED ACCESS • AUTHORIZED GOVTECH / OGP DEVELOPER UAT SANDBOX
+        </div>
+        <div style='color: #64748B; font-weight: 500;'>🏢 SYSTEMS ENGINEERING & EVALUATION INGESTION HUB</div>
+        <div style='color: #94A3B8; font-style: italic; font-size: 10.5px; margin-top: 2px;'>📦 Framework Module: Independent Simulation Pipeline Engine for Mock Telemetry Data Ingestion Architecture</div>
+    </div>
+""", unsafe_allow_html=True)
 
 # =========================================================================
 # --- APPARATUS MANAGEMENT SEGMENT: LIVE INTERFACE SECURITY CREDENTIALS ---
