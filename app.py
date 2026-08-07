@@ -65,41 +65,42 @@ center_list = ["All Centres (Global View)"] + [row[0] for row in center_rows]
 selected_center = st.sidebar.selectbox("Target Hawker Centre Location:", center_list)
 
 # --- POSTGRES CONVERSION STEP 2: CACHED TELEMETRY INGESTION ---
-# @st.cache_data(ttl=300)
 def load_master_telemetry(selected_center, selected_div):
-    # Base query template matching your exact columns in precise order
+    # 1. Base query selecting ONLY from telemetry to completely eliminate database-level join strain
     sql_base = """
-        SELECT t.timestamp, t.nea_division, t.hawker_centre, t.stall_id, t.zone_cluster, 
-               t.fill_level, t.lid_breaches_count, t.rat_detections_count, t.pir_wakeups_count, t.deterrence_triggered,
-               r.latitude, r.longitude, r.photo_url, r.postal_code, r.address, r.constituency 
-        FROM nea_telemetry t
-        JOIN hawker_registry r ON t.hawker_centre = r.hawker_centre
+        SELECT timestamp, nea_division, hawker_centre, stall_id, zone_cluster, 
+               fill_level, lid_breaches_count, rat_detections_count, pir_wakeups_count, deterrence_triggered 
+        FROM nea_telemetry
     """
     params = []
-    
-    # Construct parameterized filtering constraints
+    limit_clause = ""
+
+    # 2. Construct clean, index-optimized filtering constraints
     if selected_center == 'All Centres (Global View)':
         if selected_div != 'All NEA Regional Offices':
-            sql_base += " WHERE t.nea_division = %s"
+            sql_base += " WHERE nea_division = %s"
             params.append(selected_div)
+        # Force a safety constraint to protect 1G container memory while preserving full 15-day timelines
+        limit_clause = " ORDER BY timestamp DESC LIMIT 25000"
     else:
-        sql_base += " WHERE t.hawker_centre = %s"
+        sql_base += " WHERE hawker_centre = %s"
         params.append(selected_center)
-        
-    # Fetch the raw rows using our bulletproof query runner
-    raw_rows = run_query(sql_base, tuple(params) if params else None)
-    
-    # Map the columns explicitly to match your original database structure perfectly
-    cols = [
-        'timestamp', 'nea_division', 'hawker_centre', 'stall_id', 'zone_cluster',
-        'fill_level', 'lid_breaches_count', 'rat_detections_count', 'pir_wakeups_count', 'deterrence_triggered',
-        'latitude', 'longitude', 'photo_url', 'postal_code', 'address', 'constituency'
-    ]
-    return pd.DataFrame(raw_rows, columns=cols)
 
+    # Append the structural limit tracking modifier
+    sql_query = sql_base + limit_clause
+    
+    # 3. Fetch raw rows using your background query runner
+    row_rows = run_query(sql_query, tuple(params) if params else None)
+    
+    # 4. Map columns explicitly to match your exact metrics schema definitions
+    cols = [
+        'timestamp', 'nea_division', 'hawker_centre', 'stall_id', 'zone_cluster', 
+        'fill_level', 'lid_breaches_count', 'rat_detections_count', 'pir_wakeups_count', 'deterrence_triggered'
+    ]
+    
+    return pd.DataFrame(row_rows, columns=cols)
 
 # --- POSTGRES CONVERSION STEP 3: CACHED MAP REGISTRY INGESTION ---
-# @st.cache_data(ttl=600)
 def load_map_registry(selected_div):
     if selected_div == 'All NEA Regional Offices':
         sql = "SELECT hawker_centre, nea_division, latitude, longitude, photo_url, postal_code, address, constituency FROM hawker_registry;"
@@ -109,6 +110,10 @@ def load_map_registry(selected_div):
         raw_rows = run_query(sql, (selected_div,))
         
     cols = ['hawker_centre', 'nea_division', 'latitude', 'longitude', 'photo_url', 'postal_code', 'address', 'constituency']
+    
+    # SYSTEM FIX: Fallback to a clean layout template if the database returns None to prevent fatal TypeErrors
+    if not raw_rows:
+        return pd.DataFrame(columns=cols)
     return pd.DataFrame(raw_rows, columns=cols)
 
 @st.cache_resource
