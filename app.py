@@ -1,5 +1,4 @@
 import streamlit as st
-import sqlite3
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
@@ -134,7 +133,7 @@ def generate_gis_map(map_data, color_target, hover_name_val, hover_data_list, zo
 def initialize_global_dashboard_state(selected_center, selected_div):
     # 1. Fetch telemetry and geospatial map records cleanly from cache loaders
     m_df = load_master_telemetry(selected_center, selected_div)
-    m_view = load_map_registry(selected_div)
+    n_view = load_map_registry(selected_div)
     
     # 2. Convert timestamp metrics safely inside the isolated scope layer
     if not m_df.empty:
@@ -143,18 +142,22 @@ def initialize_global_dashboard_state(selected_center, selected_div):
     # 3. Pull operational thresholds and runtime snapshots from Supabase cloud tables
     config_rows = run_query("SELECT key, value FROM system_config;")
     sys_configs = dict(config_rows)
-
+    
     snapshot_rows = run_query("""
-        SELECT t.hawker_centre, 
-               MAX(CASE WHEN t.stall_id = 'MASTER_NODE' THEN t.rat_detections_count ELSE 0 END) as total_rats,
-               SUM(CASE WHEN t.stall_id != 'MASTER_NODE' THEN t.lid_breaches_count ELSE 0 END) as total_lids
+        SELECT t.hawker_centre,
+               MAX(CASE WHEN t.stall_id = 'MASTER_NODE' THEN t.rat_detections_count ELSE 0 END) AS total_rats,
+               SUM(CASE WHEN t.stall_id != 'MASTER_NODE' THEN t.lid_breaches_count ELSE 0 END) AS total_lids
         FROM nea_telemetry t
         WHERE t.timestamp = (SELECT MAX(timestamp) FROM nea_telemetry WHERE stall_id = 'MASTER_NODE')
         GROUP BY t.hawker_centre;
     """)
     snapshots_df = pd.DataFrame(snapshot_rows, columns=['hawker_centre', 'total_rats', 'total_lids'])
     
-    return m_df, m_view, sys_configs, snapshots_df
+    # 5. Build combined runtime dataframe via in-memory vector join to completely unburden database server
+    if not m_df.empty and not n_view.empty:
+        m_df = pd.merge(m_df, n_view, on='hawker_centre', how='inner')
+        
+    return m_df, n_view, sys_configs, snapshots_df
 
 # --- SYSTEM PLATFORM ACTIVATION HUB: UNIFIED ENTERPRISE COLD INGESTION ---
 master_df, df_map_view, system_configs, latest_snapshots = initialize_global_dashboard_state(selected_center, selected_div)
@@ -373,7 +376,7 @@ with col_chart1:
     st.plotly_chart(fig_bar, width="stretch")
 
 with col_chart2:
-    # --- NEW CHART 2: CONTINUOUS 30-DAY HISTORICAL MONTHLY OBSERVATION TIMELINE ---
+    # --- NEW CHART 2: CONTINUOUS 15-Day HISTORICAL MONTHLY OBSERVATION TIMELINE ---
 
     # SYSTEM FIX: True database alignment, extracting both metrics from the stall rows and scaling to match your operational bounds
     f1_history = center_trends[center_trends['stall_id'] != 'MASTER_NODE'].groupby('date_str').agg({
@@ -415,7 +418,7 @@ with col_chart2:
         font_family="Arial", 
         margin=dict(t=75, b=60, l=10, r=60), 
         xaxis=dict(
-            title="30-Day Monthly Observation Timeline", 
+            title="15-Day Monthly Observation Timeline", 
             tickangle=0 # Perfectly horizontal flat text strings with automated temporal filtering
         ),
         legend=dict(
@@ -605,7 +608,7 @@ with col_chart4:
         title="Night-time Rodent Surveillance (Feature 2 & 3): Time-Series Validation Timeline", 
         font_family="Arial", 
         margin=dict(t=75, b=60, l=10, r=60), 
-        xaxis=dict(title="30-Day Monthly Observation Timeline"),
+        xaxis=dict(title="15-Day Monthly Observation Timeline"),
         legend=dict(
             orientation="h", 
             yanchor="top", 
@@ -756,7 +759,7 @@ with col_chart6:
         font_family="Arial",
         margin=dict(t=75, b=60, l=40, r=60), # Expanded left margin padding to 40px to completely prevent text clipping
         xaxis=dict(
-            title="30-Day Monthly Observation Timeline",
+            title="15-Day Monthly Observation Timeline",
             tickangle=0
         ),
         legend=dict(
