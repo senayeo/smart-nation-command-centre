@@ -132,12 +132,12 @@ def generate_gis_map(map_data, color_target, hover_name_val, hover_data_list, zo
 # --- SYSTEM FIX: Combined Cloud Native Initialization Engine ---
 def initialize_global_dashboard_state(selected_center, selected_div):
     # 1. Fetch telemetry and geospatial map records cleanly from cache loaders
-    m_df = load_master_telemetry(selected_center, selected_div)
+    master_df = load_master_telemetry(selected_center, selected_div)
     n_view = load_map_registry(selected_div)
     
     # 2. Convert timestamp metrics safely inside the isolated scope layer
-    if not m_df.empty:
-        m_df['timestamp'] = pd.to_datetime(m_df['timestamp'])
+    if not master_df.empty:
+        master_df['timestamp'] = pd.to_datetime(master_df['timestamp'])
         
     # 3. Pull operational thresholds and runtime snapshots from Supabase cloud tables
     config_rows = run_query("SELECT key, value FROM system_config;")
@@ -153,11 +153,12 @@ def initialize_global_dashboard_state(selected_center, selected_div):
     """)
     snapshots_df = pd.DataFrame(snapshot_rows, columns=['hawker_centre', 'total_rats', 'total_lids'])
     
-    # 5. Build combined runtime dataframe via in-memory vector join to completely unburden database server
-    if not m_df.empty and not n_view.empty:
-        m_df = pd.merge(m_df, n_view, on='hawker_centre', how='inner')
+    # 5. Build combined runtime dataframe via clean vector merge, filtering out duplicate join columns
+    if not master_df.empty and not n_view.empty:
+        cols_to_use = n_view.columns.difference(master_df.columns).tolist() + ['hawker_centre']
+        master_df = pd.merge(master_df, n_view[cols_to_use], on='hawker_centre', how='inner')
         
-    return m_df, n_view, sys_configs, snapshots_df
+    return master_df, n_view, sys_configs, snapshots_df
 
 # --- SYSTEM PLATFORM ACTIVATION HUB: UNIFIED ENTERPRISE COLD INGESTION ---
 master_df, df_map_view, system_configs, latest_snapshots = initialize_global_dashboard_state(selected_center, selected_div)
