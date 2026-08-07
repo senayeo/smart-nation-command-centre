@@ -45,7 +45,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 st.markdown("<h2 style='text-align: left; color: #102542; font-family: Arial;'>Smart Waste Management with AIoT Rodent Prevention</h2>", unsafe_allow_html=True)
-st.markdown("<p style='text-align: left; color: #7f8c8d; font-size: 13px; margin-top: 0px; margin-bottom: 20px;'>GovTech Smart City Ingestion Initiative • Joint Agency (NEA / Town Councils) Operations Command Centre</p>", unsafe_allow_html=True)
+st.markdown("<p style='color: #7F8C8D; font-size: 13px; margin-top: -15px; margin-bottom: 25px;'><b>Operational Prototype Simulation</b> • Joint Agency (NEA Environmental Public Health / Town Councils) Smart City Ingestion & Rodent Prevention Command Centre • Developed via GovTech/OGP Architectural Evaluation Framework</p>", unsafe_allow_html=True)
 
 st.sidebar.markdown("<h3 style='color: #102542; font-family: Arial; margin-bottom: 5px;'>Surveillance Control</h3>", unsafe_allow_html=True)
 st.sidebar.markdown("<p style='font-size:11px; color:#7f8c8d; margin-top:5px; margin-bottom:2px; font-weight:bold;'>ENVIRONMENTAL PUBLIC HEALTH OPERATIONS DEPARTMENT</p>", unsafe_allow_html=True)
@@ -206,7 +206,7 @@ if selected_center != 'All Centres (Global View)' and not master_df.empty:
     else:
         st.sidebar.image(raw_img_url, width="stretch")
 
-st.sidebar.markdown("<hr><p style='font-size:11px; color:#95a5a6; font-style:italic; margin-top:2px;'>Data Source: Open Data Portal (data.gov.sg) Hawker Centre Registry. Regional office mappings simulated for GovTech/OGP architectural evaluation. Connected via Mock MQTT Ingestion Broker.</p>", unsafe_allow_html=True)
+st.sidebar.markdown("<hr><p style='font-size:11px; color:#95a5a6; font-style:italic; margin-top:2px;'>Data Source: Open Data Portal (data.gov.sg) • 'Hawker Centres (GEOJSON)' 2026 Dataset Edition. Regional office organisational clusters simulated for GovTech/OGP architectural evaluation. Connected via Mock MQTT Ingestion Broker.</p>", unsafe_allow_html=True)
 
 # --- HORIZONTAL STRIP OF STATUTORY KPI METRICS ---
 m1, m2, m3, m4 = st.columns(4)
@@ -820,6 +820,12 @@ if selected_center == 'All Centres (Global View)':
     """
     threat_rows = run_query(sql_threat)
     threat_data = pd.DataFrame(threat_rows, columns=['location_key', 'fill_level', 'lid_breaches_count', 'rat_detections_count'])
+
+    # --- SYSTEM FIX: Cast database metrics to primitive floats to prevent multiplication errors ---
+    if not threat_data.empty:
+        threat_data['fill_level'] = threat_data['fill_level'].astype(float)
+        threat_data['lid_breaches_count'] = threat_data['lid_breaches_count'].astype(float)
+        threat_data['rat_detections_count'] = threat_data['rat_detections_count'].astype(float)
     
     # Compute composite vector outbreak public health risk score mapping
     threat_data['threat_index'] = (threat_data['fill_level'] * 0.2) + (threat_data['lid_breaches_count'] * 1.5) + (threat_data['rat_detections_count'] * 20.0)
