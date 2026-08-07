@@ -156,21 +156,7 @@ def initialize_global_dashboard_state(selected_center, selected_div):
     
     return m_df, m_view, sys_configs, snapshots_df
 
-# Call the combined wrapper cleanly so your server clears the health ping in under 0.001 seconds
-# --- SYSTEM PLATFORM ACTIVATION HUB ---
-# Wrap data execution inside a button container to bypass startup server health timeouts completely
-st.sidebar.markdown("<br>", unsafe_allow_html=True)
-if 'app_activated' not in st.session_state:
-    st.session_state.app_activated = False
-
-if not st.session_state.app_activated:
-    st.info("👋 Welcome to the Smart Nation Command Centre! Click the button in the sidebar to initialize your nationwide real-time data stream pipeline.")
-    if st.sidebar.button("🚀 Launch Live Command Stream", use_container_width=True):
-        st.session_state.app_activated = True
-        st.rerun()
-    st.stop()
-
-# Once clicked, variables populate seamlessly inside your secure analytical framework channels
+# --- SYSTEM PLATFORM ACTIVATION HUB: UNIFIED ENTERPRISE COLD INGESTION ---
 master_df, df_map_view, system_configs, latest_snapshots = initialize_global_dashboard_state(selected_center, selected_div)
 
 # --- SIDEBAR OFFICE METADATA ARRAYS ---
@@ -220,7 +206,7 @@ if selected_center != 'All Centres (Global View)' and not master_df.empty:
     else:
         st.sidebar.image(raw_img_url, width="stretch")
 
-st.sidebar.markdown("<hr><p style='font-size:11px; color:#95a5a6; font-style:italic; margin-top:2px;'>Data Source: National Environment Agency (NEA) Master Asset Registry. Connected via MQTT Ingestion Broker.</p>", unsafe_allow_html=True)
+st.sidebar.markdown("<hr><p style='font-size:11px; color:#95a5a6; font-style:italic; margin-top:2px;'>Data Source: Open Data Portal (data.gov.sg) Hawker Centre Registry. Regional office mappings simulated for GovTech/OGP architectural evaluation. Connected via Mock MQTT Ingestion Broker.</p>", unsafe_allow_html=True)
 
 # --- HORIZONTAL STRIP OF STATUTORY KPI METRICS ---
 m1, m2, m3, m4 = st.columns(4)
@@ -479,34 +465,39 @@ col_chart3, col_chart4 = st.columns(2)
 
 with col_chart3:
     # SYSTEM FIX: Corrects the inner subquery WHERE clause by removing the invalid outer t1 alias to clear the DatabaseError
-    conn_c3 = sqlite3.connect(DB_FILE)
+    # --- POSTGRES CONVERSION: CHART 3 SURVEILLANCE ---
+    supabase_uri = st.secrets["SUPABASE_URI"]
+    conn_c3 = psycopg2.connect(supabase_uri)
     
     if selected_center == 'All Centres (Global View)':
-        zone_surv = pd.read_sql_query("""
+        placeholders_c3 = ",".join(["%s"] * len(target_centers))
+        sql_c3 = f"""
             SELECT t1.zone_cluster, t1.rat_detections_count, t1.pir_wakeups_count
             FROM nea_telemetry t1
             INNER JOIN (
-                SELECT zone_cluster, MAX(rowid) as max_id
+                SELECT zone_cluster, MAX(id) as max_id
                 FROM nea_telemetry
-                WHERE hawker_centre IN (""" + ",".join(["?"] * len(target_centers)) + """) AND stall_id = 'MASTER_NODE'
+                WHERE hawker_centre IN ({placeholders_c3}) AND stall_id = 'MASTER_NODE'
                 GROUP BY zone_cluster
-            ) t2 ON t1.rowid = t2.max_id
-            WHERE t1.hawker_centre IN (""" + ",".join(["?"] * len(target_centers)) + """) AND t1.stall_id = 'MASTER_NODE'
-            ORDER BY t1.zone_cluster
-        """, conn_c3, params=chart_params + chart_params)
+            ) t2 ON t1.id = t2.max_id
+            WHERE t1.hawker_centre IN ({placeholders_c3}) AND t1.stall_id = 'MASTER_NODE'
+            ORDER BY t1.zone_cluster;
+        """
+        zone_surv = pd.read_sql_query(sql_c3, conn_c3, params=tuple(target_centers) + tuple(target_centers))
     else:
-        zone_surv = pd.read_sql_query("""
+        sql_c3 = """
             SELECT t1.zone_cluster, t1.rat_detections_count, t1.pir_wakeups_count
             FROM nea_telemetry t1
             INNER JOIN (
-                SELECT zone_cluster, MAX(rowid) as max_id
+                SELECT zone_cluster, MAX(id) as max_id
                 FROM nea_telemetry
-                WHERE (hawker_centre = ? OR ? LIKE '%' || hawker_centre || '%') AND stall_id = 'MASTER_NODE'
+                WHERE hawker_centre = %s AND stall_id = 'MASTER_NODE'
                 GROUP BY zone_cluster
-            ) t2 ON t1.rowid = t2.max_id
-            WHERE (t1.hawker_centre = ? OR ? LIKE '%' || t1.hawker_centre || '%') AND t1.stall_id = 'MASTER_NODE'
-            ORDER BY t1.zone_cluster
-        """, conn_c3, params=chart_params + chart_params)
+            ) t2 ON t1.id = t2.max_id
+            WHERE t1.hawker_centre = %s AND t1.stall_id = 'MASTER_NODE'
+            ORDER BY t1.zone_cluster;
+        """
+        zone_surv = pd.read_sql_query(sql_c3, conn_c3, params=(selected_center, selected_center))
     conn_c3.close()
 
     if zone_surv.empty:
@@ -953,3 +944,20 @@ if not df_log.empty:
     )
 else:
     st.warning("⚠️ No central operational telemetry data log streams currently active in memory.")
+
+# --- OFFICIAL DISCLAIMER & PROJECT OPERATIONAL FOOTER ---
+st.markdown("<br><br>", unsafe_allow_html=True)
+st.markdown("""
+    <div style='border-top: 1px solid #E2E8F0; padding-top: 15px; padding-bottom: 5px; text-align: center; font-family: Arial;'>
+        <p style='margin: 0; font-size: 11px; color: #94A3B8; letter-spacing: 0.5px;'>
+            © 2026 Smart Nation Command Centre • Designed & Developed by Sena Yeo / 9024083G
+        </p>
+        <p style='margin: 4px 0 0 0; font-size: 11px; color: #94A3B8; font-weight: bold;'>
+            ⚠️ PROJECT DISCLAIMER & NOTICE:
+        </p>
+        <p style='margin: 2px auto 0 auto; font-size: 10px; color: #CBD5E1; max-width: 800px; line-height: 1.4; font-style: italic;'>
+            This application is an independent academic/simulation project built utilising open public data metrics from data.gov.sg. It is purely a functional mock-up designed to evaluate smart city AIoT dashboard architectures (GovTech / Open Government Products frameworks) and holds no official affiliation, endorsement, or sanction from the National Environment Agency (NEA) or any Singapore Government entity.
+        </p>
+    </div>
+""", unsafe_allow_html=True)
+
