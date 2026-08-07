@@ -228,25 +228,28 @@ with m1:
     true_total_centres = len(center_list) - 1
     st.markdown(f'<div style="background-color: #F8F9FA; padding: 12px; border-left: 4px solid #102542; border-radius: 4px;"><p style="margin:0px; font-size:11px; color:#7f8c8d; font-weight:bold;">HAWKER CENTRES TRACKED</p><h3 style="margin:0px; color:#102542; font-size: 22px;">{true_total_centres} Centres</h3></div>', unsafe_allow_html=True)
 with m2: 
-    st.markdown(f'<div style="background-color: #F8F9FA; padding: 12px; border-left: 4px solid #2980b9; border-radius: 4px;"><p style="margin:0px; font-size:11px; color:#7f8c8d; font-weight:bold;">LID BREACHES [F1]</p><h3 style="margin:0px; color:#2980b9; font-size: 22px;">{df["lid_breaches_count"].sum() if not df.empty and "lid_breaches_count" in df.columns else 0} Flags</h3></div>', unsafe_allow_html=True)
+    st.markdown(f'<div style="background-color: #F8F9FA; padding: 12px; border-left: 4px solid #2980b9; border-radius: 4px;"><p style="margin:0px; font-size:11px; color:#7f8c8d; font-weight:bold;">LID BREACHES [F1]</p><h3 style="margin:0px; color:#2980b9; font-size: 22px;">{master_df["lid_breaches_count"].sum() if not master_df.empty and "lid_breaches_count" in master_df.columns else 0} Flags</h3></div>', unsafe_allow_html=True)
 with m3: 
-    st.markdown(f'<div style="background-color: #FFF0F0; padding: 12px; border-left: 4px solid #E74C3C; border-radius: 4px;"><p style="margin:0px; font-size:11px; color:#7f8c8d; font-weight:bold;">YOLOv8 DETECTIONS [F2]</p><h3 style="margin:0px; color:#E74C3C; font-size: 22px;">{df["rat_detections_count"].sum() if not df.empty and "rat_detections_count" in df.columns else 0} Verified</h3></div>', unsafe_allow_html=True)
+    st.markdown(f'<div style="background-color: #FFF0F0; padding: 12px; border-left: 4px solid #E74C3C; border-radius: 4px;"><p style="margin:0px; font-size:11px; color:#7f8c8d; font-weight:bold;">YOLOv8 DETECTIONS [F2]</p><h3 style="margin:0px; color:#E74C3C; font-size: 22px;">{master_df["rat_detections_count"].sum() if not master_df.empty and "rat_detections_count" in master_df.columns else 0} Verified</h3></div>', unsafe_allow_html=True)
 with m4: 
-    st.markdown(f'<div style="background-color: #F8F9FA; padding: 12px; border-left: 4px solid #2ECC71; border-radius: 4px;"><p style="margin:0px; font-size:11px; color:#7f8c8d; font-weight:bold;">MEAN FILL VOLUME [F1]</p><h3 style="margin:0px; color:#2ECC71; font-size: 22px;">{round(df["fill_level"].mean(), 1) if not df.empty and "fill_level" in df.columns else 0.0}%</h3></div>', unsafe_allow_html=True)
+    st.markdown(f'<div style="background-color: #F8F9FA; padding: 12px; border-left: 4px solid #2ECC71; border-radius: 4px;"><p style="margin:0px; font-size:11px; color:#7f8c8d; font-weight:bold;">MEAN FILL VOLUME [F1]</p><h3 style="margin:0px; color:#2ECC71; font-size: 22px;">{round(master_df["fill_level"].mean(), 1) if not master_df.empty and "fill_level" in master_df.columns else 0.0}%</h3></div>', unsafe_allow_html=True)
 
 st.markdown("<br>", unsafe_allow_html=True)
 st.markdown("<h4 style='color: #102542; font-family: Arial; margin-bottom: 10px;'>📍 Geospatial Information System (GIS) Hotspot Map</h4>", unsafe_allow_html=True)
 
 # --- POSTGRES CONVERSION: MAP LAYER SNAPSHOTS ---
-snapshot_map_rows = run_query("""
+supabase_uri = st.secrets["SUPABASE_URI"]
+conn_map = psycopg2.connect(supabase_uri)
+sql_map = """
     SELECT t.hawker_centre, 
            MAX(CASE WHEN t.stall_id = 'MASTER_NODE' THEN t.rat_detections_count ELSE 0 END) as total_rats,
            SUM(CASE WHEN t.stall_id != 'MASTER_NODE' THEN t.lid_breaches_count ELSE 0 END) as total_lids
     FROM nea_telemetry t
     WHERE t.timestamp = (SELECT MAX(timestamp) FROM nea_telemetry WHERE stall_id = 'MASTER_NODE')
     GROUP BY t.hawker_centre;
-""")
-latest_snapshots = pd.DataFrame(snapshot_map_rows, columns=['hawker_centre', 'total_rats', 'total_lids'])
+"""
+latest_snapshots = pd.read_sql_query(sql_map, conn_map)
+conn_map.close()
 
 # --- EXECUTE OPTIMIZED GIS MAP RENDERER FROM MEMORY CACHE ---
 if selected_center == 'All Centres (Global View)':
@@ -264,10 +267,10 @@ st.markdown("<br><hr>", unsafe_allow_html=True)
 
 # --- UNIFIED CONFIGURATION INTERFACE FOR SUB-GRIDS ---
 if selected_center == 'All Centres (Global View)':
-    target_centers = list(df[df['stall_id'] == 'MASTER_NODE'].groupby('hawker_centre')['rat_detections_count'].sum().nlargest(10).index)
-    center_filter_clause = "t1.hawker_centre IN (" + ",".join(["?"] * len(target_centers)) + ")"
+    target_centers = list(master_df[master_df['stall_id'] == 'MASTER_NODE'].groupby('hawker_centre')['rat_detections_count'].sum().nlargest(10).index)
+    center_filter_clause = "t1.hawker_centre IN (" + ",".join(["%s"] * len(target_centers)) + ")"
     chart_params = tuple(target_centers)
-    center_trends = df[df['hawker_centre'].isin(target_centers)].copy()
+    center_trends = master_df[master_df['hawker_centre'].isin(target_centers)].copy()
     st.markdown("""
         <div style='font-family: Arial;'>
             <h4 style='color: #102542; margin-bottom: 0px; font-weight: bold;'>Analytical Phase 1: Smart Waste Fill Status & Bin Lid Status Analytics</h4>
@@ -276,10 +279,9 @@ if selected_center == 'All Centres (Global View)':
     """, unsafe_allow_html=True)
 else:
     target_centers = [selected_center]
-    center_filter_clause = "(? LIKE '%' || t1.hawker_centre || '%' OR t1.hawker_centre = ?)"
+    center_filter_clause = "(%s LIKE '%' || t1.hawker_centre || '%' OR t1.hawker_centre = %s)"
     chart_params = (selected_center, selected_center)
-    # SYSTEM FIX: Changed from regex str.contains to direct string equality to safely process centre name parentheses
-    center_trends = df[df['hawker_centre'] == selected_center].copy()
+    center_trends = master_df[master_df['hawker_centre'] == selected_center].copy()
     st.markdown(f"""
         <div style='font-family: Arial;'>
             <h4 style='color: #102542; margin-bottom: 0px; font-weight: bold;'>Analytical Phase 1: Smart Waste Fill Status & Bin Lid Status Analytics</h4>
