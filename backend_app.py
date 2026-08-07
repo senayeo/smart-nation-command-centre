@@ -1,7 +1,7 @@
 import streamlit as st
-import sqlite3
 import pandas as pd
 from datetime import datetime
+import psycopg2
 
 # --- THIRD-PARTY EMBEDDED INTEGRATION: TWILIO MESSAGING OPERATIONS API ---
 try:
@@ -29,20 +29,22 @@ st.markdown("""
 
 # Systemic database settings table initialization
 def init_system_config_tables():
-    conn = sqlite3.connect(DB_FILE)
+    supabase_uri = st.secrets["SUPABASE_URI"]
+    conn = psycopg2.connect(supabase_uri)
     cursor = conn.cursor()
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS system_config (
             key TEXT PRIMARY KEY,
             value REAL
-        )
+        );
     """)
-    cursor.execute("INSERT OR IGNORE INTO system_config (key, value) VALUES ('fill_threshold', 75.0)")
-    cursor.execute("INSERT OR IGNORE INTO system_config (key, value) VALUES ('lid_threshold', 5.0)")
-    cursor.execute("INSERT OR IGNORE INTO system_config (key, value) VALUES ('pir_threshold', 10.0)")
-    cursor.execute("INSERT OR IGNORE INTO system_config (key, value) VALUES ('ai_threshold', 3.0)")
-    cursor.execute("INSERT OR IGNORE INTO system_config (key, value) VALUES ('relay_threshold', 8.0)")
+    cursor.execute("INSERT INTO system_config (key, value) VALUES ('fill_threshold', 75.0) ON CONFLICT (key) DO NOTHING;")
+    cursor.execute("INSERT INTO system_config (key, value) VALUES ('lid_threshold', 5.0) ON CONFLICT (key) DO NOTHING;")
+    cursor.execute("INSERT INTO system_config (key, value) VALUES ('pir_threshold', 10.0) ON CONFLICT (key) DO NOTHING;")
+    cursor.execute("INSERT INTO system_config (key, value) VALUES ('ai_threshold', 3.0) ON CONFLICT (key) DO NOTHING;")
+    cursor.execute("INSERT INTO system_config (key, value) VALUES ('relay_threshold', 8.0) ON CONFLICT (key) DO NOTHING;")
     conn.commit()
+    cursor.close()
     conn.close()
 
 init_system_config_tables()
@@ -85,8 +87,12 @@ with st.expander("Configure Twilio Master Gateway & Staff API Routing Keys", exp
 st.markdown("<br>", unsafe_allow_html=True)
 st.markdown("### 🏢 Facility Selection Target Routing")
 
-conn = sqlite3.connect(DB_FILE)
-raw_divs = conn.execute("SELECT DISTINCT nea_division FROM hawker_registry WHERE nea_division IS NOT NULL").fetchall()
+supabase_uri = st.secrets["SUPABASE_URI"]
+conn = psycopg2.connect(supabase_uri)
+cursor = conn.cursor()
+cursor.execute("SELECT DISTINCT nea_division FROM hawker_registry WHERE nea_division IS NOT NULL;")
+raw_divs = cursor.fetchall()
+cursor.close()
 conn.close()
 
 div_options = []
@@ -99,8 +105,12 @@ col_div_drop, _ = st.columns([2, 2.5])
 with col_div_drop:
     selected_div = st.selectbox("Select Target NEA Regional Office Jurisdiction:", div_options, label_visibility="collapsed")
 
-conn = sqlite3.connect(DB_FILE)
-center_rows = conn.execute(f'SELECT hawker_centre FROM hawker_registry WHERE nea_division = "{selected_div}" ORDER BY hawker_centre').fetchall()
+supabase_uri = st.secrets["SUPABASE_URI"]
+conn = psycopg2.connect(supabase_uri)
+cursor = conn.cursor()
+cursor.execute("SELECT hawker_centre FROM hawker_registry WHERE nea_division = %s ORDER BY hawker_centre;", (selected_div,))
+center_rows = cursor.fetchall()
+cursor.close()
 conn.close()
 
 center_list = [r for (r,) in center_rows]
@@ -109,8 +119,12 @@ col_center_drop, _ = st.columns([6.8, 2.5])
 with col_center_drop:
     selected_center = st.selectbox("Select Target Hawker Centre Location:", center_list, label_visibility="collapsed")
 
-conn = sqlite3.connect(DB_FILE)
-zone_rows = conn.execute(f'SELECT DISTINCT zone_cluster FROM nea_telemetry WHERE hawker_centre = "{selected_center}" ORDER BY zone_cluster').fetchall()
+supabase_uri = st.secrets["SUPABASE_URI"]
+conn = psycopg2.connect(supabase_uri)
+cursor = conn.cursor()
+cursor.execute("SELECT DISTINCT zone_cluster FROM nea_telemetry WHERE hawker_centre = %s ORDER BY zone_cluster;", (selected_center,))
+zone_rows = cursor.fetchall()
+cursor.close()
 conn.close()
 
 zone_list = [z for (z,) in zone_rows]
@@ -124,14 +138,19 @@ st.markdown("<hr>", unsafe_allow_html=True)
 
 # Helper function to extract latest historical baseline database records for pre-fill synchronization
 def fetch_latest_telemetry_defaults():
-    conn = sqlite3.connect(DB_FILE)
-    res = conn.execute(f"""
+    supabase_uri = st.secrets["SUPABASE_URI"]
+    conn = psycopg2.connect(supabase_uri)
+    cursor = conn.cursor()
+    cursor.execute("""
         SELECT fill_level, lid_breaches_count, pir_wakeups_count, rat_detections_count, deterrence_triggered 
         FROM nea_telemetry 
-        WHERE hawker_centre = "{selected_center}" AND zone_cluster = "{selected_zone}" 
-        ORDER BY timestamp DESC LIMIT 1
-    """).fetchone()
+        WHERE hawker_centre = %s AND zone_cluster = %s 
+        ORDER BY timestamp DESC LIMIT 1;
+    """, (selected_center, selected_zone))
+    res = cursor.fetchone()
+    cursor.close()
     conn.close()
+
     if res:
         return {"fill": int(res[0]), "lids": int(res[1]), "pir": int(res[2]), "rats": int(res[3]), "relays": int(res[4])}
     return {"fill": 35, "lids": 2, "pir": 4, "rats": 0, "relays": 0}
@@ -167,12 +186,16 @@ with tab1:
     st.markdown("### 🚛 Day-time Smart Waste Management & Central SLA Ingestion Node") 
     st.caption("GovTech Central Sandbox: **Pre-Deployment UAT & Town Council / Social Enterprise SLA Audit Node**")
     
-    conn = sqlite3.connect(DB_FILE)
-    t1_fill_thresh = conn.execute("SELECT value FROM system_config WHERE key = 'fill_threshold'").fetchone()
-    t1_lid_thresh = conn.execute("SELECT value FROM system_config WHERE key = 'lid_threshold'").fetchone()
-    
-    # SYSTEM UPGRADE FIXED: Pulls the true building parameters EARLY to prevent widget rendering race conditions
-    stalls_query = conn.execute("SELECT COUNT(DISTINCT stall_id) FROM nea_telemetry WHERE hawker_centre = ?", (selected_center,)).fetchone()
+    supabase_uri = st.secrets["SUPABASE_URI"]
+    conn = psycopg2.connect(supabase_uri)
+    cursor = conn.cursor()
+    cursor.execute("SELECT value FROM system_config WHERE key = 'fill_threshold';")
+    t1_fill_thresh = cursor.fetchone()
+    cursor.execute("SELECT value FROM system_config WHERE key = 'lid_threshold';")
+    t1_lid_thresh = cursor.fetchone()
+    cursor.execute("SELECT COUNT(DISTINCT stall_id) FROM nea_telemetry WHERE hawker_centre = %s;", (selected_center,))
+    stalls_query = cursor.fetchone()
+    cursor.close()
     conn.close()
     
     t1_f_val = t1_fill_thresh[0] if t1_fill_thresh else 75.0
@@ -237,10 +260,13 @@ with tab1:
         new_t1_l_thresh = st.session_state.t1_lid_slider_state
     
     if new_t1_f_thresh != t1_f_val or new_t1_l_thresh != t1_l_val:
-        conn = sqlite3.connect(DB_FILE)
-        conn.execute("UPDATE system_config SET value = ? WHERE key = 'fill_threshold'", (new_t1_f_thresh,))
-        conn.execute("UPDATE system_config SET value = ? WHERE key = 'lid_threshold'", (new_t1_l_thresh,))
+        supabase_uri = st.secrets["SUPABASE_URI"]
+        conn = psycopg2.connect(supabase_uri)
+        cursor = conn.cursor()
+        cursor.execute("UPDATE system_config SET value = %s WHERE key = 'fill_threshold';", (new_t1_f_thresh,))
+        cursor.execute("UPDATE system_config SET value = %s WHERE key = 'lid_threshold';", (new_t1_l_thresh,))
         conn.commit()
+        cursor.close()
         conn.close()
         st.toast("✅ Day-time operational threshold rules updated!", icon="⚙️")
         
@@ -293,27 +319,27 @@ with tab1:
 
         now_str = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
         
-        conn = sqlite3.connect(DB_FILE)
-        historical_logs = pd.read_sql_query(f'SELECT fill_level, lid_breaches_count FROM nea_telemetry WHERE hawker_centre = "{selected_center}" AND zone_cluster = "{selected_zone}" ORDER BY timestamp DESC LIMIT 3', conn)
+        supabase_uri = st.secrets["SUPABASE_URI"]
+        conn = psycopg2.connect(supabase_uri)
+        historical_logs = pd.read_sql_query('SELECT fill_level, lid_breaches_count FROM nea_telemetry WHERE hawker_centre = %s AND zone_cluster = %s ORDER BY timestamp DESC LIMIT 3;', conn, params=(selected_center, selected_zone))
         rolling_fill_mean = (historical_logs['fill_level'].sum() + inp_fill) / (len(historical_logs) + 1) if not historical_logs.empty else inp_fill
         rolling_lid_sum = historical_logs['lid_breaches_count'].sum() + inp_lids if not historical_logs.empty else inp_lids
         
         cursor = conn.cursor()
-        reg_data = cursor.execute(f'SELECT nea_division FROM hawker_registry WHERE hawker_centre = "{selected_center}"').fetchone()
-        
-        # SYSTEM FIX: Appends [0] to extract the raw string value out of the SQL tuple wrapper cleanly
+        cursor.execute("SELECT nea_division FROM hawker_registry WHERE hawker_centre = %s;", (selected_center,))
+        reg_data = cursor.fetchone()
         db_division = reg_data[0] if reg_data else selected_div
         
-        stall_row = cursor.execute(f'SELECT stall_id FROM nea_telemetry WHERE hawker_centre = "{selected_center}" AND zone_cluster = "{selected_zone}" LIMIT 1').fetchone()
-        
-        # SYSTEM FIX: Appends [0] to extract the raw string value out of the SQL tuple wrapper cleanly
+        cursor.execute("SELECT stall_id FROM nea_telemetry WHERE hawker_centre = %s AND zone_cluster = %s LIMIT 1;", (selected_center, selected_zone))
+        stall_row = cursor.fetchone()
         db_stall_id = stall_row[0] if stall_row else "STALL-001"
         
         cursor.execute("""
             INSERT INTO nea_telemetry (timestamp, nea_division, hawker_centre, stall_id, zone_cluster, fill_level, lid_breaches_count, rat_detections_count, pir_wakeups_count, deterrence_triggered)
-            VALUES (?, ?, ?, ?, ?, ?, ?, 0, 0, 0)
-        """, (now_str, db_division, selected_center, db_stall_id, selected_zone, inp_fill, inp_lids))
+            VALUES (%s, %s, %s, %s, %s, %s, %s, 0, 0, 0);
+        """, (now_str, db_division, selected_center, db_stall_id, selected_zone, float(inp_fill), float(inp_lids)))
         conn.commit()
+        cursor.close()
         conn.close()
         
         st.success("🎉 Day-time telemetry packet logged into the central database registry successfully!")
@@ -381,12 +407,12 @@ with tab1:
                 
             evidence_matrix_payload = "\n".join(matrix_rows)
 
-            # SYSTEM FIX: Correctly aligned with 12 spaces of horizontal indentation to match the local nested loop tree
-            import sqlite3
-            conn_sync = sqlite3.connect(DB_FILE)
-            conn_sync.execute("UPDATE system_config SET value = ? WHERE key = 'fill_threshold'", (float(new_t1_f_thresh),))
-            conn_sync.execute("UPDATE system_config SET value = ? WHERE key = 'lid_threshold'", (float(new_t1_l_thresh),))
+            conn_sync = psycopg2.connect(supabase_uri)
+            cursor_sync = conn_sync.cursor()
+            cursor_sync.execute("UPDATE system_config SET value = %s WHERE key = 'fill_threshold';", (float(new_t1_f_thresh),))
+            cursor_sync.execute("UPDATE system_config SET value = %s WHERE key = 'lid_threshold';", (float(new_t1_l_thresh),))
             conn_sync.commit()
+            cursor_sync.close()
             conn_sync.close()
             
             # Step 6: Combined evidence matrices and refined enforcement phrasing to accurately reflect GovTech's institutional data logging boundaries
@@ -423,9 +449,14 @@ with tab2:
     st.markdown("### 🌙 Night-time Rodent Surveillance & Predictive Outbreak Analytics")
     st.caption("GovTech Central Sandbox: **Pre-Deployment UAT & NEA Rodent Control Alert Routing Node**")
     
-    conn = sqlite3.connect(DB_FILE)
-    t2_pir_row = conn.execute("SELECT value FROM system_config WHERE key = 'pir_threshold'").fetchone()
-    t2_ai_row = conn.execute("SELECT value FROM system_config WHERE key = 'ai_threshold'").fetchone()
+    supabase_uri = st.secrets["SUPABASE_URI"]
+    conn = psycopg2.connect(supabase_uri)
+    cursor = conn.cursor()
+    cursor.execute("SELECT value FROM system_config WHERE key = 'pir_threshold';")
+    t2_pir_row = cursor.fetchone()
+    cursor.execute("SELECT value FROM system_config WHERE key = 'ai_threshold';")
+    t2_ai_row = cursor.fetchone()
+    cursor.close()
     conn.close()
     
     t2_p_val = t2_pir_row[0] if t2_pir_row else 10.0
@@ -483,28 +514,28 @@ with tab2:
         now_str = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
         
         # Step 1: Connect to your database and pull the correct agency region registry parameters
-        conn = sqlite3.connect(DB_FILE)
+        supabase_uri = st.secrets["SUPABASE_URI"]
+        conn = psycopg2.connect(supabase_uri)
         cursor = conn.cursor()
         
-        reg_data = cursor.execute("SELECT nea_division FROM hawker_registry WHERE hawker_centre = ?", (selected_center,)).fetchone()
-        selected_div = reg_data[0] if reg_data else "Unknown"
+        cursor.execute("SELECT nea_division FROM hawker_registry WHERE hawker_centre = %s;", (selected_center,))
+        reg_data = cursor.fetchone()
+        selected_div_data = reg_data[0] if reg_data else selected_div
         
-        db_stall_id = "MASTER_NODE" # SYSTEM FIX: Overrides individual retail stall tracking to route data cleanly into Chart 3 master layout filters
-
-        # SYSTEM FIX: Fetches current bin metrics from the database to preserve Feature 1 states completely unchanged
-        f1_row = cursor.execute("SELECT fill_level, lid_breaches_count FROM nea_telemetry WHERE hawker_centre = ? AND zone_cluster = ? ORDER BY timestamp DESC LIMIT 1", (selected_center, selected_zone)).fetchone()
-        db_fill = float(f1_row[0]) if f1_row and f1_row[0] is not None else 20.0
-        db_lids = int(f1_row[1]) if f1_row and f1_row[1] is not None else 0
+        db_stall_id = "MASTER_NODE"
         
-        # Step 2: Dynamic Data Injection into your SQL table rows
-        # This replaces the hardcoded numbers to ensure your real toggle switch and input boxes are logged accurately
+        cursor.execute("SELECT fill_level, lid_breaches_count FROM nea_telemetry WHERE hawker_centre = %s AND zone_cluster = %s ORDER BY timestamp DESC LIMIT 1;", (selected_center, selected_zone))
+        fl_row = cursor.fetchone()
+        db_fill = float(fl_row[0]) if fl_row else 20.0
+        db_lids = float(fl_row[1]) if fl_row else 2.0
+        
         cursor.execute("""
             INSERT INTO nea_telemetry (timestamp, nea_division, hawker_centre, stall_id, zone_cluster, fill_level, lid_breaches_count, rat_detections_count, pir_wakeups_count, deterrence_triggered)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        """, (now_str, selected_div, selected_center, db_stall_id, selected_zone, db_fill, db_lids, inp_rats, (10 if f2_sighting_confirmed else 0), 0))
-        cursor.execute("INSERT OR REPLACE INTO system_config (key, value) VALUES ('rat_threshold', ?)", (float(new_ai_thresh),))
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, 0);
+        """, (now_str, selected_div_data, selected_center, db_stall_id, selected_zone, db_fill, db_lids, int(inp_rats_t2), int(inp_pir_t2)))
         
         conn.commit()
+        cursor.close()
         conn.close()
         
         # Step 3: Standardised operational alert trigger check using your exact slider configuration parameters
@@ -540,8 +571,12 @@ with tab3:
     st.caption("GovTech Central Sandbox: **Pre-Deployment UAT & External Pest Control SLA Compliance Node**")
 
     # SYSTEM FIX: Safely unpacks the SQLite row tuple container to extract the raw numeric value and prevent TypeErrors
-    conn = sqlite3.connect(DB_FILE)
-    t3_relay_row = conn.execute("SELECT value FROM system_config WHERE key = 'relay_threshold'").fetchone()
+    supabase_uri = st.secrets["SUPABASE_URI"]
+    conn = psycopg2.connect(supabase_uri)
+    cursor = conn.cursor()
+    cursor.execute("SELECT value FROM system_config WHERE key = 'relay_threshold';")
+    t3_relay_row = cursor.fetchone()
+    cursor.close()
     conn.close()
     
     # Unpacks the row tuple data safely if records exist
@@ -566,9 +601,11 @@ with tab3:
             new_relay_thresh = st.slider("", min_value=5.0, max_value=10.0, value=float(min(10.0, float(t3_r_val))), step=1.0, key="slider_relay_thresh", label_visibility="collapsed")
             
             # SYSTEM FIX: Commits your slider movement directly to the central configuration table in real time
-            conn_sync = sqlite3.connect(DB_FILE)
-            conn_sync.execute("UPDATE system_config SET value = ? WHERE key = 'relay_threshold'", (new_relay_thresh,))
+            conn_sync = psycopg2.connect(supabase_uri)
+            cursor_sync = conn_sync.cursor()
+            cursor_sync.execute("UPDATE system_config SET value = %s WHERE key = 'relay_threshold';", (float(new_relay_thresh),))
             conn_sync.commit()
+            cursor_sync.close()
             conn_sync.close()
 
         
@@ -600,21 +637,24 @@ with tab3:
         now_str = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
         
         # SYSTEM UPGRADE FIXED: Pulls the true database postal code column natively and scrubs out the obsolete db_stall_id query loop
-        conn = sqlite3.connect(DB_FILE)
+        supabase_uri = st.secrets["SUPABASE_URI"]
+        conn = psycopg2.connect(supabase_uri)
         cursor = conn.cursor()
         
-        # Pulls both your regional operations office division and the live 6-digit postal code in one unified query
-        reg_data = cursor.execute("SELECT nea_division, postal_code FROM hawker_registry WHERE hawker_centre = ?", (selected_center,)).fetchone()
+        # SYSTEM FIX: Separates execution from row fetching to ensure native PostgreSQL compatibility
+        cursor.execute("SELECT nea_division, postal_code FROM hawker_registry WHERE hawker_centre = %s;", (selected_center,))
+        reg_data = cursor.fetchone()
         selected_div = reg_data[0] if reg_data else "Unknown Office"
         live_postcode = reg_data[1] if reg_data else "050335"
-
-        # SYSTEM FIX: Aligns database column mappings with the frontend's subtraction logic to fix the sync failure
+        
+        # SYSTEM FIX: Explicitly defines column names to prevent ID count alignment type crashes
         cursor.execute("""
             INSERT INTO nea_telemetry (timestamp, nea_division, hawker_centre, stall_id, zone_cluster, fill_level, lid_breaches_count, rat_detections_count, pir_wakeups_count, deterrence_triggered)
-            VALUES (?, ?, ?, ?, ?, 0, 0, ?, 0, 0)
-        """, (now_str, selected_div, selected_center, "MASTER_NODE", selected_zone, inp_relay))
-      
+            VALUES (%s, %s, %s, %s, %s, 0, 0, %s, 0, 0);
+        """, (now_str, selected_div, selected_center, "MASTER_NODE", selected_zone, int(inp_relay)))
+        
         conn.commit()
+        cursor.close()
         conn.close()
         
         # Step 3: Operational hardware failure threshold evaluation check
@@ -644,4 +684,20 @@ with tab3:
         else:
             # Archives baseline operational metrics quietly without pushing text notification spam to the agency
             st.info(f"ℹ️ Automated hardware health signature verified for {selected_center} [Zone {selected_zone}]. SensorGrid telemetry confirms mitigation relay activity is within nominal parameters. External vendor operational logs comply with active SLA performance baselines.")
+
+# --- OFFICIAL DISCLAIMER & BACKEND OPERATIONAL FOOTER ---
+st.markdown("<br><br>", unsafe_allow_html=True)
+st.markdown("""
+    <div style='border-top: 1px solid #E2E8F0; padding-top: 15px; padding-bottom: 5px; text-align: center; font-family: Arial;'>
+        <p style='margin: 0; font-size: 11px; color: #94A3B8; letter-spacing: 0.5px;'>
+            © 2026 Smart Nation Command Centre • Backend Ingestion Pipeline Tool • Designed & Developed by Sena Yeo / 9024083G
+        </p>
+        <p style='margin: 4px 0 0 0; font-size: 11px; color: #94A3B8; font-weight: bold;'>
+            ⚠️ PROJECT DISCLAIMER & NOTICE:
+        </p>
+        <p style='margin: 2px auto 0 auto; font-size: 10px; color: #CBD5E1; max-width: 800px; line-height: 1.4; font-style: italic;'>
+            This application is an independent academic/simulation project built utilizing open public data metrics from data.gov.sg. It is purely a functional backend prototype designed to simulate real-time smart city data ingestion architectures (GovTech / Open Government Products frameworks) and holds no official affiliation, endorsement, or sanction from the National Environment Agency (NEA) or any Singapore Government entity.
+        </p>
+    </div>
+""", unsafe_allow_html=True)
 
