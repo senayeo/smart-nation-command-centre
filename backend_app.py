@@ -10,8 +10,6 @@ try:
 except ImportError:
     TWILIO_AVAILABLE = False
 
-DB_FILE = "smart_waste_nationwide.db"
-
 st.set_page_config(page_title="Command Console: Operations Backend", layout="centered", page_icon="🌐")
 
 st.markdown("""
@@ -50,7 +48,8 @@ def init_system_config_tables():
 init_system_config_tables()
 
 st.title("📡 Smart Nation Public Hygiene SensorGrid Hub")
-st.caption("GovTech Smart Nation Infrastructure: **Cross-Agency UAT Sandbox & Telemetry Routing Engine**")
+st.caption("🔒 RESTRICTED ACCESS • DEVELOPER UAT SANDBOX • AUTHORIZED GOVTECH / OGP SYSTEMS ENGINEERING EVALUATION PORTAL")
+st.caption("📦 Framework Module: Independent Simulation Pipeline Engine for Mock Telemetry Data Ingestion Architecture")
 
 # =========================================================================
 # --- APPARATUS MANAGEMENT SEGMENT: LIVE INTERFACE SECURITY CREDENTIALS ---
