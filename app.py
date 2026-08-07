@@ -157,6 +157,20 @@ def initialize_global_dashboard_state(selected_center, selected_div):
     return m_df, m_view, sys_configs, snapshots_df
 
 # Call the combined wrapper cleanly so your server clears the health ping in under 0.001 seconds
+# --- SYSTEM PLATFORM ACTIVATION HUB ---
+# Wrap data execution inside a button container to bypass startup server health timeouts completely
+st.sidebar.markdown("<br>", unsafe_allow_html=True)
+if 'app_activated' not in st.session_state:
+    st.session_state.app_activated = False
+
+if not st.session_state.app_activated:
+    st.info("👋 Welcome to the Smart Nation Command Centre! Click the button in the sidebar to initialize your nationwide real-time data stream pipeline.")
+    if st.sidebar.button("🚀 Launch Live Command Stream", use_container_width=True):
+        st.session_state.app_activated = True
+        st.rerun()
+    st.stop()
+
+# Once clicked, variables populate seamlessly inside your secure analytical framework channels
 master_df, df_map_view, system_configs, latest_snapshots = initialize_global_dashboard_state(selected_center, selected_div)
 
 # --- SIDEBAR OFFICE METADATA ARRAYS ---
