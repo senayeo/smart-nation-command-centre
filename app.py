@@ -130,27 +130,34 @@ def generate_gis_map(map_data, color_target, hover_name_val, hover_data_list, zo
     )
     return fig_map
 
-# SYSTEM FIX: Execute performance-caching channels from memory to eliminate client boot latency
-master_df = load_master_telemetry(selected_center, selected_div)
-df_map_view = load_map_registry(selected_div)
+# --- SYSTEM FIX: Combined Cloud Native Initialization Engine ---
+def initialize_global_dashboard_state(selected_center, selected_div):
+    # 1. Fetch telemetry and geospatial map records cleanly from cache loaders
+    m_df = load_master_telemetry(selected_center, selected_div)
+    m_view = load_map_registry(selected_div)
+    
+    # 2. Convert timestamp metrics safely inside the isolated scope layer
+    if not m_df.empty:
+        m_df['timestamp'] = pd.to_datetime(m_df['timestamp'])
+        
+    # 3. Pull operational thresholds and runtime snapshots from Supabase cloud tables
+    config_rows = run_query("SELECT key, value FROM system_config;")
+    sys_configs = dict(config_rows)
 
-# --- POSTGRES CONVERSION STEP 4: STATIC THRESHOLDS & GLOBAL SNAPSHOTS ---
-# 1. Fetch system configuration keys natively using our clean query runner
-config_rows = run_query("SELECT key, value FROM system_config;")
-system_configs = dict(config_rows)
+    snapshot_rows = run_query("""
+        SELECT t.hawker_centre, 
+               MAX(CASE WHEN t.stall_id = 'MASTER_NODE' THEN t.rat_detections_count ELSE 0 END) as total_rats,
+               SUM(CASE WHEN t.stall_id != 'MASTER_NODE' THEN t.lid_breaches_count ELSE 0 END) as total_lids
+        FROM nea_telemetry t
+        WHERE t.timestamp = (SELECT MAX(timestamp) FROM nea_telemetry WHERE stall_id = 'MASTER_NODE')
+        GROUP BY t.hawker_centre;
+    """)
+    snapshots_df = pd.DataFrame(snapshot_rows, columns=['hawker_centre', 'total_rats', 'total_lids'])
+    
+    return m_df, m_view, sys_configs, snapshots_df
 
-# 2. Fetch your latest real-time records and map the fields directly into a DataFrame
-snapshot_rows = run_query("""
-    SELECT t.hawker_centre, 
-           MAX(CASE WHEN t.stall_id = 'MASTER_NODE' THEN t.rat_detections_count ELSE 0 END) as total_rats,
-           SUM(CASE WHEN t.stall_id != 'MASTER_NODE' THEN t.lid_breaches_count ELSE 0 END) as total_lids
-    FROM nea_telemetry t
-    WHERE t.timestamp = (SELECT MAX(timestamp) FROM nea_telemetry WHERE stall_id = 'MASTER_NODE')
-    GROUP BY t.hawker_centre;
-""")
-latest_snapshots = pd.DataFrame(snapshot_rows, columns=['hawker_centre', 'total_rats', 'total_lids'])
-
-master_df['timestamp'] = pd.to_datetime(master_df['timestamp'])
+# Call the combined wrapper cleanly so your server clears the health ping in under 0.001 seconds
+master_df, df_map_view, system_configs, latest_snapshots = initialize_global_dashboard_state(selected_center, selected_div)
 
 # --- SIDEBAR OFFICE METADATA ARRAYS ---
 if selected_div != 'All NEA Regional Offices':
