@@ -48,8 +48,7 @@ def init_system_config_tables():
 init_system_config_tables()
 
 st.title("📡 Smart Nation Public Hygiene SensorGrid Hub")
-st.caption("🔒 RESTRICTED ACCESS • DEVELOPER UAT SANDBOX • AUTHORIZED GOVTECH / OGP SYSTEMS ENGINEERING EVALUATION PORTAL")
-st.caption("📦 Framework Module: Independent Simulation Pipeline Engine for Mock Telemetry Data Ingestion Architecture")
+st.caption("🔒 RESTRICTED ACCESS • DEVELOPER UAT SANDBOX <br> 🏢 AUTHORIZED GOVTECH / OGP SYSTEMS ENGINEERING EVALUATION PORTAL <br> 📦 Framework Module: Independent Simulation Pipeline Engine for Mock Telemetry Data Ingestion Architecture", unsafe_allow_html=True)
 
 # =========================================================================
 # --- APPARATUS MANAGEMENT SEGMENT: LIVE INTERFACE SECURITY CREDENTIALS ---
