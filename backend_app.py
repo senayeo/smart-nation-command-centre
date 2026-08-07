@@ -243,7 +243,12 @@ with tab1:
 
         # Define the instant callback logic to manipulate states and force widget key rotation
         def enforce_lid_threshold_ceiling():
-            raw_input_val = st.session_state[f"current_lid_slider_val_v{st.session_state.slider_version}"]
+            # Fix: Dynamically checks for your exact active key to prevent initialization errors
+            key_name = f"current_lid_slider_val_v{st.session_state.slider_version}"
+            if key_name not in st.session_state:
+                return
+                
+            raw_input_val = st.session_state[key_name]
             if raw_input_val > risk_limit_cap:
                 st.session_state.t1_lid_slider_state = risk_limit_cap
                 st.session_state.slider_version += 1  # Forces Streamlit to instantly redraw the widget handle position
