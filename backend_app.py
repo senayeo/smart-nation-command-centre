@@ -334,11 +334,11 @@ with tab1:
         cursor = conn.cursor()
         cursor.execute("SELECT nea_division FROM hawker_registry WHERE hawker_centre = %s;", (selected_center,))
         reg_data = cursor.fetchone()
-        db_division = reg_data[0] if reg_data else selected_div
+        db_division = reg_data[0] if reg_data and reg_data[0] else selected_div
         
         cursor.execute("SELECT stall_id FROM nea_telemetry WHERE hawker_centre = %s AND zone_cluster = %s LIMIT 1;", (selected_center, selected_zone))
         stall_row = cursor.fetchone()
-        db_stall_id = stall_row[0] if stall_row else "STALL-001"
+        db_stall_id = stall_row[0] if stall_row and stall_row[0] else "STALL-001"
         
         cursor.execute("""
             INSERT INTO nea_telemetry (timestamp, nea_division, hawker_centre, stall_id, zone_cluster, fill_level, lid_breaches_count, rat_detections_count, pir_wakeups_count, deterrence_triggered)
@@ -502,6 +502,7 @@ with tab2:
         col_l2_w1, _ = st.columns([0.6, 2.5])
         with col_l2_w1:
             inp_rats = st.number_input("", min_value=0, max_value=15, value=12, step=1, key="inp_rats_t2", label_visibility="collapsed")
+            inp_pir = int(db_defaults.get("pir", 4))
     else:
         st.markdown('<hr style="border: 0; border-top: 1px solid #E6E8EB; margin-top: 4px; margin-bottom: 6px;">', unsafe_allow_html=True)
         # SYSTEM FIX: Sanitises layout jargon and unifies feature names word-for-word with your active GovTech sandbox views
@@ -538,7 +539,8 @@ with tab2:
         cursor.execute("""
             INSERT INTO nea_telemetry (timestamp, nea_division, hawker_centre, stall_id, zone_cluster, fill_level, lid_breaches_count, rat_detections_count, pir_wakeups_count, deterrence_triggered)
             VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, 0);
-        """, (now_str, selected_div_data, selected_center, db_stall_id, selected_zone, db_fill, db_lids, int(inp_rats_t2), int(inp_pir_t2)))
+        """, (now_str, selected_div_data, selected_center, db_stall_id, selected_zone, db_fill, db_lids, int(inp_rats), int(inp_pir)))
+
         
         conn.commit()
         cursor.close()
