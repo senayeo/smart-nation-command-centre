@@ -317,6 +317,10 @@ with col_chart1:
     current_fill_limit = float(system_configs.get('fill_threshold', 75.0))
     current_lid_limit = float(system_configs.get('lid_threshold', 4.0))
     
+    # DYNAMIC COLOR ALIGNMENT LAYER: Generates distinct color arrays matching threshold states
+    fill_colors = ['#D35400' if val > current_fill_limit else '#2ECC71' for val in zone_waste['fill_level']]
+    lid_colors = ['#C0392B' if val > current_lid_limit else '#5DADE2' for val in zone_waste['lid_breaches_count']]
+    
     from plotly.subplots import make_subplots
     import plotly.graph_objects as go
     
@@ -328,7 +332,7 @@ with col_chart1:
             x=zone_waste['zone_cluster'],
             y=zone_waste['fill_level'],
             name='Mean Zone Fill Level (%)',
-            marker_color='#2ECC71',
+            marker_color=fill_colors,
             offsetgroup=1
         ),
         secondary_y=False
@@ -340,12 +344,12 @@ with col_chart1:
             x=zone_waste['zone_cluster'],
             y=zone_waste['lid_breaches_count'],
             name='Open Bins (<100% Fill, >5 Mins) Count',
-            marker_color='#5DADE2',
+            marker_color=lid_colors,
             offsetgroup=2
         ),
         secondary_y=True
     )
-    
+   
     # SHAPE 1: Lightened Green Volume SLA Target Limit Line bound to left axis
     fig_bar.add_shape(
         type="line", x0=-0.5, x1=len(zone_waste['zone_cluster'])-0.5,
