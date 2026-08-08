@@ -268,8 +268,8 @@ conn_map.close()
 # --- EXECUTE OPTIMIZED GIS MAP RENDERER FROM MEMORY CACHE ---
 if selected_center == 'All Centres (Global View)':
     map_data = df_map_view.merge(latest_snapshots, on='hawker_centre', how='left').fillna(0)
-    # SYSTEM FIX: Applies a tight linear progression from 10 to 26 so every single rodent sighting step renders a completely unique weight
-    map_data['Display Size'] = 10.0 + (map_data['total_rats'].astype(int) * 4.0)
+    # SYSTEM RESTORATION: Re-implements your perfect geometric scaling curve to keep 0 and 1 dots clean, compact, and distinct
+    map_data['Display Size'] = map_data['total_rats'].apply(lambda x: 4.0 if x == 0 else (7.0 if x == 1 else (12.0 if x == 2 else (18.0 if x == 3 else 25.0))))
     fig_map = generate_gis_map(map_data, "total_rats", "hawker_centre", ["total_rats", "total_lids", "constituency"], 10.6)
 else:
     map_data = df_map_view[df_map_view['hawker_centre'] == selected_center].merge(latest_snapshots, on='hawker_centre', how='left').fillna(0)
