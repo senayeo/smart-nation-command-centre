@@ -413,12 +413,18 @@ with col_chart1:
 
 with col_chart2:
     # --- NEW CHART 2: CONTINUOUS 15-Day HISTORICAL MONTHLY OBSERVATION TIMELINE ---
-
-    # SYSTEM RESTORATION: Reverts to daily string grouping to lock your perfect 15-day horizontal timeline spread
-    f1_history = center_trends.groupby('date_str').agg({
-        'fill_level': 'mean',
-        'lid_breaches_count': 'mean'
-    }).reset_index()
+    # SYSTEM FIX: Forces global averages to pull from master_df instead of center_trends when All Centres is active
+    if selected_center == 'All Centres (Global View)':
+        f1_history = master_df.groupby('date_str').agg({
+            'fill_level': 'mean',
+            'lid_breaches_count': 'mean'
+        }).reset_index()
+    else:
+        f1_history = center_trends.groupby('date_str').agg({
+            'fill_level': 'mean',
+            'lid_breaches_count': 'mean'
+        }).reset_index()
+        
     f1_history = f1_history[f1_history['date_str'].isin(unique_db_dates)].sort_values('date_str')
 
     # Calculate vertical scale padding headroom matching operational bounds
@@ -590,7 +596,8 @@ with col_chart3:
 with col_chart4:
     # --- RESTORED ORIGINAL UNTRUNCATED SURVEILLANCE VALIDATION TIMELINE ---
     if selected_center == 'All Centres (Global View)':
-        daily_summary = center_trends[center_trends['stall_id'] == 'MASTER_NODE'].groupby('date_str').agg({
+        # SYSTEM FIX: Forces global view to pull from master_df instead of the truncated center_trends dataframe
+        daily_summary = master_df[master_df['stall_id'] == 'MASTER_NODE'].groupby('date_str').agg({
             'pir_wakeups_count': 'sum', 
             'rat_detections_count': 'sum'
         }).reset_index()
@@ -746,12 +753,20 @@ with col_chart5:
     st.plotly_chart(fig_c5, width="stretch")
 
 with col_chart6:
-    # SYSTEM RESTORATION: Reverts to daily string grouping to lock your perfect 15-day horizontal timeline spread perfectly
-    f4_history = center_trends[center_trends['stall_id'] == 'MASTER_NODE'].groupby('date_str').agg({
-        'pir_wakeups_count': 'max',
-        'rat_detections_count': 'max',
-        'deterrence_triggered': 'max'
-    }).reset_index()
+    # SYSTEM FIX: Forces global view to pull from master_df instead of center_trends when All Centres is active
+    if selected_center == 'All Centres (Global View)':
+        f4_history = master_df[master_df['stall_id'] == 'MASTER_NODE'].groupby('date_str').agg({
+            'pir_wakeups_count': 'max',
+            'rat_detections_count': 'max',
+            'deterrence_triggered': 'max'
+        }).reset_index()
+    else:
+        f4_history = center_trends[center_trends['stall_id'] == 'MASTER_NODE'].groupby('date_str').agg({
+            'pir_wakeups_count': 'max',
+            'rat_detections_count': 'max',
+            'deterrence_triggered': 'max'
+        }).reset_index()
+        
     f4_history = f4_history[f4_history['date_str'].isin(unique_db_dates)].sort_values('date_str')
 
     # Vectorized calculation matching your exact Feature 4 hardware failure tracking logic
