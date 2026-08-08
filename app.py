@@ -307,9 +307,10 @@ else:
         </div>
     """, unsafe_allow_html=True)
 
-center_trends['date_str'] = center_trends['timestamp'].dt.strftime('%Y-%m-%d')
-unique_db_dates = sorted(center_trends['date_str'].unique())[-15:]
 
+center_trends['date_str'] = center_trends['timestamp'].dt.strftime('%Y-%m-%d')
+# SYSTEM FIX: Forces the timeline to look at the unfiltered master table, keeping the chart 15 days wide in all center views
+unique_db_dates = sorted(master_df['timestamp'].dt.strftime('%Y-%m-%d').unique())[-15:]
 
 # --- ROW 1: SNAPSHOT VS TIME-SERIES LINE (ARRANGED SIDE-BY-SIDE IN PAIRS) ---
 col_chart1, col_chart2 = st.columns(2)
