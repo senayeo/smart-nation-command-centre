@@ -608,9 +608,13 @@ with col_chart3:
 with col_chart4:
     # --- RESTORED ORIGINAL UNTRUNCATED SURVEILLANCE VALIDATION TIMELINE ---
     if selected_center == 'All Centres (Global View)':
-        # SYSTEM RESTORATION: Reverts to 'sum' to display the true collective total volume across all top 10 centers
-        daily_summary = master_df[master_df['stall_id'] == 'MASTER_NODE'].groupby('date_str').agg({
-            'pir_wakeups_count': 'sum', 
+        # SYSTEM FIX: Extracts daily max per center first to eliminate 2-hour row inflation, then sums them collectively
+        daily_max_per_center = master_df[master_df['stall_id'] == 'MASTER_NODE'].groupby(['date_str', 'hawker_centre']).agg({
+            'pir_wakeups_count': 'max',
+            'rat_detections_count': 'max'
+        }).reset_index()
+        daily_summary = daily_max_per_center.groupby('date_str').agg({
+            'pir_wakeups_count': 'sum',
             'rat_detections_count': 'sum'
         }).reset_index()
     else:
@@ -766,8 +770,13 @@ with col_chart5:
 
 with col_chart6:
     if selected_center == 'All Centres (Global View)':
-        # SYSTEM RESTORATION: Reverts to 'sum' to display the true collective total volume across all top 10 centers
-        f4_history = master_df[master_df['stall_id'] == 'MASTER_NODE'].groupby('date_str').agg({
+        # SYSTEM FIX: Extracts daily max per center first to eliminate 2-hour row inflation, then sums them collectively
+        daily_max_per_center = master_df[master_df['stall_id'] == 'MASTER_NODE'].groupby(['date_str', 'hawker_centre']).agg({
+            'pir_wakeups_count': 'max',
+            'rat_detections_count': 'max',
+            'deterrence_triggered': 'max'
+        }).reset_index()
+        f4_history = daily_max_per_center.groupby('date_str').agg({
             'pir_wakeups_count': 'sum',
             'rat_detections_count': 'sum',
             'deterrence_triggered': 'sum'
