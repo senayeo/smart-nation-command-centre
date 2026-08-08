@@ -80,8 +80,9 @@ def load_master_telemetry(selected_center, selected_div):
         if selected_div != 'All NEA Regional Offices':
             sql_base += " WHERE nea_division = %s"
             params.append(selected_div)
-        # Force a safety constraint to protect 1G container memory while preserving full 15-day timelines
-        limit_clause = " ORDER BY timestamp DESC LIMIT 25000"
+        # SYSTEM FIX: Dynamically applies WHERE or AND based on existing filters to prevent database syntax crashes
+        sql_base += " AND timestamp >= NOW() - INTERVAL '15 days'" if "WHERE" in sql_base else " WHERE timestamp >= NOW() - INTERVAL '15 days'"
+        limit_clause = " ORDER BY timestamp ASC"
     else:
         sql_base += " WHERE hawker_centre = %s"
         params.append(selected_center)
@@ -309,7 +310,7 @@ else:
 
 master_df['date_str'] = master_df['timestamp'].dt.strftime('%Y-%m-%d')
 center_trends['date_str'] = center_trends['timestamp'].dt.strftime('%Y-%m-%d')
-unique_db_dates = sorted(master_df['date_str'].unique())[-15:]
+unique_db_dates = sorted(center_trends['date_str'].unique())[-15:]
 
 # --- ROW 1: SNAPSHOT VS TIME-SERIES LINE (ARRANGED SIDE-BY-SIDE IN PAIRS) ---
 col_chart1, col_chart2 = st.columns(2)
