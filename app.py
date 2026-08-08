@@ -532,19 +532,16 @@ with col_chart3:
     conn_c3 = psycopg2.connect(supabase_uri)
     
     if selected_center == 'All Centres (Global View)':
-        # SYSTEM FIX: Window ranking extracts the absolute latest state per individual facility across all table history for rat detections
+        # SYSTEM FIX: Eliminates MASTER_NODE block constraints and extracts the absolute last recorded maximum snapshot per center
         sql_c3 = """
-            SELECT hawker_centre AS x_axis_target,
-                   SUM(rat_detections_count) AS rat_detections_count
+            SELECT hawker_centre AS x_axis_target, rat_detections_count
             FROM (
-                SELECT hawker_centre, zone_cluster, rat_detections_count,
-                       ROW_NUMBER() OVER (PARTITION BY hawker_centre, zone_cluster ORDER BY timestamp DESC) as rn
+                SELECT hawker_centre, rat_detections_count,
+                       ROW_NUMBER() OVER (PARTITION BY hawker_centre ORDER BY timestamp DESC) as rn
                 FROM nea_telemetry
-                WHERE stall_id = 'MASTER_NODE'
             ) sub
             WHERE rn = 1
-            GROUP BY hawker_centre
-            ORDER BY rat_detections_count ASC
+            ORDER BY rat_detections_count DESC
             LIMIT 10;
         """
         zone_surv = pd.read_sql_query(sql_c3, conn_c3)
@@ -560,7 +557,7 @@ with col_chart3:
                 return name_str
             zone_surv['x_axis_target'] = zone_surv['x_axis_target'].apply(shorten_name)
     else:
-        # SINGLE CENTER VIEW: Maintain direct index-optimized database connection querying for mesh zone precision (PERFECTION)
+        # SINGLE CENTER VIEW: Maintain direct index-optimized database connection querying for mesh zone precision (UNTOUCHED)
         if selected_center == 'All Centres (Global View)':
             placeholders_c3 = ",".join(["%s"] * len(target_centers))
             sql_c3 = f"""
