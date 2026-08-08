@@ -456,7 +456,9 @@ with col_chart2:
         margin=dict(t=75, b=60, l=10, r=60), 
         xaxis=dict(
             title="15-Day Monthly Observation Timeline", 
-            tickangle=0 # Perfectly horizontal flat text strings with automated temporal filtering
+            tickangle=0,
+            # SYSTEM FIX: Locks the horizontal viewport window to force your full historical 15-day layout to render
+            range=[unique_db_dates[0], unique_db_dates[-1]]
         ),
         legend=dict(
             orientation="h", 
@@ -640,7 +642,7 @@ with col_chart4:
         title="Night-time Rodent Surveillance (Feature 2 & 3): Time-Series Validation Timeline", 
         font_family="Arial", 
         margin=dict(t=75, b=60, l=10, r=60), 
-        xaxis=dict(title="15-Day Monthly Observation Timeline"),
+        xaxis=dict(title="15-Day Monthly Observation Timeline", range=[unique_db_dates[0], unique_db_dates[-1]]),
         legend=dict(
             orientation="h", 
             yanchor="top", 
@@ -792,7 +794,9 @@ with col_chart6:
         margin=dict(t=75, b=60, l=40, r=60), # Expanded left margin padding to 40px to completely prevent text clipping
         xaxis=dict(
             title="15-Day Monthly Observation Timeline",
-            tickangle=0
+            tickangle=0,
+            # SYSTEM FIX: Locks the horizontal viewport window using explicit index markers to enforce the full 15-day layout
+            range=[unique_db_dates[0], unique_db_dates[-1]]
         ),
         legend=dict(
             orientation="h",
