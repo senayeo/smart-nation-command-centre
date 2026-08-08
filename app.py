@@ -538,15 +538,14 @@ with col_chart3:
         zone_surv = pd.DataFrame([{'zone_cluster': z, 'rat_detections_count': 0, 'pir_wakeups_count': 0} for z in ['A','B','C','D','E','F']])
 
     # SYSTEM FIX: Extract the dynamic Feature 3 PIR Activity Limit directly from the global system dictionary configuration
-    current_rat_limit = float(system_configs.get('rat_threshold', 2.0))
+    current_rat_limit = float(system_configs.get('surveillance_threshold', 2.0))
 
     # SYSTEM FIX: Shifted target metrics matrix to rat_detections_count to resolve pristine profile display bug
     c3_max_rats = int(zone_surv['rat_detections_count'].max()) if not zone_surv.empty else 0
     c3_ceil_rats = max(5, math.ceil(c3_max_rats * 1.15))
 
-    # SYSTEM FIX: Reverted to a single, clean bar trace with a static zero baseline floor to align symmetrically with Chart 5's logic
-    # Set dynamic alert color variables: turns Red if hardware wakeups breach the trigger limit, green if within safe tracking bounds
-    bar_colors_c3 = ['#E74C3C' if val > current_rat_limit else '#95A5A6' for val in zone_surv['rat_detections_count']] 
+    # SYSTEM FIX: Enforces strict type casting and boundary checks to match your backend threshold conditions perfectly
+    bar_colors_c3 = ['#C0392B' if int(val) > current_rat_limit else '#95A5A6' for val in zone_surv['rat_detections_count']]
     
     fig_c3 = go.Figure()
     
