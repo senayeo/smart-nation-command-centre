@@ -726,34 +726,25 @@ col_chart5, col_chart6 = st.columns(2)
 current_relay_limit = float(system_configs.get('relay_threshold', 8.0))
 
 with col_chart5:
-    # --- PROSTGRES CONVERSION: CHART 5 DETERRENCE ---
+    # --- POSTGRES CONVERSION: CHART 5 DETERRENCE ---
+    supabase_uri = st.secrets["SUPABASE_URI"]
+    conn_c5 = psycopg2.connect(supabase_uri)
+    
     if selected_center == 'All Centres (Global View)':
-        if not master_df.empty:
-            # 1. Filter to MASTER_NODE and isolate the absolute latest calendar date available in memory
-            latest_date_target = master_df['date_str'].max()
-            global_last_night = master_df[(master_df['stall_id'] == 'MASTER_NODE') & (master_df['date_str'] == latest_date_target)].copy()
-            
-            if not global_last_night.empty:
-                # 2. Extract max per zone cluster within each center to handle 2-hour interval log entries
-                zone_maxes = global_last_night.groupby(['hawker_centre', 'zone_cluster']).agg({
-                    'rat_detections_count': 'max',
-                    'deterrence_triggered': 'max'
-                }).reset_index()
-                
-                # 3. Calculate ineffective cycles per zone cluster
-                zone_maxes['ineffective_cycles'] = (zone_maxes['rat_detections_count'] - zone_maxes['deterrence_triggered']).clip(lower=0)
-                
-                # 4. Roll up total countermeasure failures by hawker center name along the horizontal axis
-                zone_deter = zone_maxes.groupby('hawker_centre')['ineffective_cycles'].sum().reset_index()
-                zone_deter.columns = ['x_axis_target', 'ineffective_cycles']
-            else:
-                zone_deter = pd.DataFrame(columns=['x_axis_target', 'ineffective_cycles'])
-        else:
-            zone_deter = pd.DataFrame(columns=['x_axis_target', 'ineffective_cycles'])
+        # SYSTEM FIX: Dynamic SQL pulls the true total count of ineffective cycles across all zones per hawker center from last night's logs
+        sql_c5 = """
+            SELECT hawker_centre AS x_axis_target,
+                   SUM(CASE WHEN rat_detections_count > deterrence_triggered THEN rat_detections_count - deterrence_triggered ELSE 0 END) AS ineffective_cycles
+            FROM nea_telemetry
+            WHERE stall_id = 'MASTER_NODE'
+              AND timestamp::date = (SELECT MAX(timestamp::date) FROM nea_telemetry)
+            GROUP BY hawker_centre
+            ORDER BY ineffective_cycles DESC
+            LIMIT 10;
+        """
+        zone_deter = pd.read_sql_query(sql_c5, conn_c5)
     else:
         # SINGLE CENTER VIEW: Maintain direct index-optimized database connection querying for mesh zone precision
-        supabase_uri = st.secrets["SUPABASE_URI"]
-        conn_c5 = psycopg2.connect(supabase_uri)
         sql_c5 = """
             SELECT t.zone_cluster AS x_axis_target, 
                    MAX(t.rat_detections_count) AS rat_detections_count, 
@@ -764,7 +755,8 @@ with col_chart5:
             ORDER BY t.zone_cluster;
         """
         zone_deter = pd.read_sql_query(sql_c5, conn_c5, params=(selected_center,))
-        conn_c5.close()
+        
+    conn_c5.close()
 
     if zone_deter.empty:
         zone_deter = pd.DataFrame([{'x_axis_target': z, 'rat_detections_count': 0, 'deterrence_triggered': 0, 'ineffective_cycles': 0} for z in ['A','B','C','D','E','F']])
