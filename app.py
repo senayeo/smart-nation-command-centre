@@ -731,13 +731,13 @@ with col_chart5:
     conn_c5 = psycopg2.connect(supabase_uri)
     
     if selected_center == 'All Centres (Global View)':
-        # SYSTEM FIX: Window ranking extracts the absolute latest state per individual center/zone across all history to cleanly support mixed dates and live simulation pushes
+        # SYSTEM FIX: Window ranking extracts the absolute latest state per individual stall across all historical logs
         sql_c5 = """
             SELECT hawker_centre AS x_axis_target,
                    SUM(CASE WHEN rat_detections_count > deterrence_triggered THEN rat_detections_count - deterrence_triggered ELSE 0 END) AS ineffective_cycles
             FROM (
-                SELECT hawker_centre, zone_cluster, rat_detections_count, deterrence_triggered,
-                       ROW_NUMBER() OVER (PARTITION BY hawker_centre, zone_cluster ORDER BY timestamp DESC) as rn
+                SELECT hawker_centre, stall_id, zone_cluster, rat_detections_count, deterrence_triggered,
+                       ROW_NUMBER() OVER (PARTITION BY hawker_centre, stall_id, zone_cluster ORDER BY timestamp DESC) as rn
                 FROM nea_telemetry
                 WHERE stall_id != 'MASTER_NODE'
             ) sub
@@ -773,8 +773,13 @@ with col_chart5:
         
     conn_c5.close()
 
+    # Fallback to verify clean presentation states if columns are fully blank or zero-filled
     if zone_deter.empty:
-        zone_deter = pd.DataFrame([{'x_axis_target': z, 'rat_detections_count': 0, 'deterrence_triggered': 0, 'ineffective_cycles': 0} for z in ['A','B','C','D','E','F']])
+        if selected_center == 'All Centres (Global View)':
+            fallback_centers = ["Maxwell Food Centre", "Chinatown Complex", "Hong Lim Complex", "Tiong Bahru Market", "Tekka Centre", "Geylang Serai Market", "Amoy Street Food Centre", "Old Airport Road Food Centre", "Chomp Chomp Food Centre", "Golden Mile Food Centre"]
+            zone_deter = pd.DataFrame([{'x_axis_target': c, 'ineffective_cycles': 0} for c in fallback_centers])
+        else:
+            zone_deter = pd.DataFrame([{'x_axis_target': z, 'rat_detections_count': 0, 'deterrence_triggered': 0, 'ineffective_cycles': 0} for z in ['A','B','C','D','E','F']])
 
     if 'ineffective_cycles' not in zone_deter.columns:
         zone_deter['ineffective_cycles'] = zone_deter.apply(lambda r: max(0, int(r['rat_detections_count']) - int(r['deterrence_triggered'])), axis=1)
@@ -783,7 +788,7 @@ with col_chart5:
 
     fig_c5 = go.Figure()
     
-    # SYSTEM FIX: Enforces a clean horizontal layout for All Centres, and switches to vertical only for single-center zone letters
+    # SYSTEM FIX: Enforces clean horizontal layouts for All Centres, and switches to vertical for single-center zone letters
     if selected_center == 'All Centres (Global View)':
         fig_c5.add_trace(go.Bar(
             y=zone_deter['x_axis_target'], x=zone_deter['ineffective_cycles'], 
@@ -791,7 +796,6 @@ with col_chart5:
         ))
         axis_heading = "Ineffective Countermeasure Cycles"
         title_heading = "Last-Night Operational Countermeasure Profile: Top 10 High-Risk Centers"
-        # Draw the target line threshold vertically over the horizontal page canvas layout
         fig_c5.add_shape(
             type="line", y0=-0.5, y1=len(zone_deter['x_axis_target'])-0.5,
             x0=current_relay_limit, x1=current_relay_limit, 
