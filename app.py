@@ -77,15 +77,26 @@ def load_master_telemetry(selected_center, selected_div):
 
     # 2. Construct clean, index-optimized filtering constraints
     if selected_center == 'All Centres (Global View)':
+        # SYSTEM FIX: Dynamically isolates the top 10 highest risk facilities via a subquery to support live simulation pushes
+        sql_base += """ 
+            WHERE hawker_centre IN (
+                SELECT hawker_centre 
+                FROM nea_telemetry 
+                WHERE stall_id = 'MASTER_NODE' AND timestamp >= NOW() - INTERVAL '15 days'
+                GROUP BY hawker_centre 
+                ORDER BY SUM(rat_detections_count) DESC 
+                LIMIT 10
+            ) AND timestamp >= NOW() - INTERVAL '15 days'
+        """
         if selected_div != 'All NEA Regional Offices':
-            sql_base += " WHERE nea_division = %s"
+            sql_base += " AND nea_division = %s"
             params.append(selected_div)
-        # SYSTEM FIX: Dynamically applies WHERE or AND based on existing filters to prevent database syntax crashes
-        sql_base += " AND timestamp >= NOW() - INTERVAL '15 days'" if "WHERE" in sql_base else " WHERE timestamp >= NOW() - INTERVAL '15 days'"
+            
         limit_clause = " ORDER BY timestamp ASC"
     else:
         sql_base += " WHERE hawker_centre = %s"
         params.append(selected_center)
+        limit_clause = " ORDER BY timestamp ASC"
 
     # Append the structural limit tracking modifier
     sql_query = sql_base + limit_clause
