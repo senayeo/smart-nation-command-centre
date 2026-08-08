@@ -608,10 +608,10 @@ with col_chart3:
 with col_chart4:
     # --- RESTORED ORIGINAL UNTRUNCATED SURVEILLANCE VALIDATION TIMELINE ---
     if selected_center == 'All Centres (Global View)':
-        # SYSTEM FIX: Forces global view to pull from master_df instead of the truncated center_trends dataframe
+        # SYSTEM FIX: Changes from 'sum' to 'mean' to completely eliminate multi-center data accumulation inflation
         daily_summary = master_df[master_df['stall_id'] == 'MASTER_NODE'].groupby('date_str').agg({
-            'pir_wakeups_count': 'sum', 
-            'rat_detections_count': 'sum'
+            'pir_wakeups_count': 'mean', 
+            'rat_detections_count': 'mean'
         }).reset_index()
     else:
         daily_summary = center_trends[center_trends['stall_id'] == 'MASTER_NODE'].groupby('date_str').agg({
@@ -765,12 +765,12 @@ with col_chart5:
     st.plotly_chart(fig_c5, width="stretch")
 
 with col_chart6:
-    # SYSTEM FIX: Forces global view to pull from master_df instead of center_trends when All Centres is active
+    # SYSTEM FIX: Changes from 'max' to 'mean' inside the global view to completely eliminate multi-center data accumulation inflation
     if selected_center == 'All Centres (Global View)':
         f4_history = master_df[master_df['stall_id'] == 'MASTER_NODE'].groupby('date_str').agg({
-            'pir_wakeups_count': 'max',
-            'rat_detections_count': 'max',
-            'deterrence_triggered': 'max'
+            'pir_wakeups_count': 'mean',
+            'rat_detections_count': 'mean',
+            'deterrence_triggered': 'mean'
         }).reset_index()
     else:
         f4_history = center_trends[center_trends['stall_id'] == 'MASTER_NODE'].groupby('date_str').agg({
