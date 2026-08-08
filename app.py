@@ -452,7 +452,7 @@ with col_chart2:
     fig_timeline1.update_layout(
         title="Smart Waste Management (Feature 1): Time-Series Observation Timeline", 
         font_family="Arial", 
-        margin=dict(t=75, b=60, l=10, r=60), 
+        margin=dict(t=75, b=110, l=10, r=60), 
         xaxis=dict(
             title="15-Day Monthly Observation Timeline", 
             tickangle=-45,
@@ -642,7 +642,7 @@ with col_chart4:
     fig_c4.update_layout(
         title="Night-time Rodent Surveillance (Feature 2 & 3): Time-Series Validation Timeline", 
         font_family="Arial", 
-        margin=dict(t=75, b=60, l=10, r=60), 
+        margin=dict(t=75, b=110, l=10, r=60), 
         xaxis=dict(
             title="15-Day Monthly Observation Timeline",
             tickangle=-45,
@@ -798,7 +798,7 @@ with col_chart6:
     fig_c6.update_layout(
         title="Countermeasure Performance (Feature 2 & 4): Time-Series Observation Timeline",
         font_family="Arial",
-        margin=dict(t=75, b=60, l=40, r=60),
+        margin=dict(t=75, b=110, l=40, r=60),
         xaxis=dict(
             title="15-Day Monthly Observation Timeline",
             type="category",
