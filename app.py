@@ -739,7 +739,8 @@ with col_chart5:
                 SELECT hawker_centre, zone_cluster, rat_detections_count, deterrence_triggered,
                        ROW_NUMBER() OVER (PARTITION BY hawker_centre, zone_cluster ORDER BY timestamp DESC) as rn
                 FROM nea_telemetry
-                WHERE stall_id = 'MASTER_NODE'
+                # SYSTEM FIX: Swaps constraint to track individual stall entries where countermeasure metrics are actually written
+                WHERE stall_id != 'MASTER_NODE'
             ) sub
             WHERE rn = 1
             GROUP BY hawker_centre
