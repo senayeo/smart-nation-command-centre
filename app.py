@@ -731,7 +731,7 @@ with col_chart5:
     conn_c5 = psycopg2.connect(supabase_uri)
     
     if selected_center == 'All Centres (Global View)':
-        # SYSTEM FIX: Window ranking extracts the absolute latest entry per individual center/zone across all history to cleanly support mixed dates and live simulation pushes
+        # SYSTEM FIX: Window ranking extracts the absolute latest state per individual center/zone across all history to cleanly support mixed dates and live simulation pushes
         sql_c5 = """
             SELECT hawker_centre AS x_axis_target,
                    SUM(CASE WHEN rat_detections_count > deterrence_triggered THEN rat_detections_count - deterrence_triggered ELSE 0 END) AS ineffective_cycles
@@ -747,6 +747,17 @@ with col_chart5:
             LIMIT 10;
         """
         zone_deter = pd.read_sql_query(sql_c5, conn_c5)
+        
+        # USER TRICK IMPLEMENTATION: Shortens long center names by extracting text inside brackets dynamically
+        if not zone_deter.empty and 'x_axis_target' in zone_deter.columns:
+            def shorten_name(name_str):
+                name_str = str(name_str).strip()
+                if "(" in name_str and ")" in name_str:
+                    start = name_str.find("(") + 1
+                    end = name_str.find(")")
+                    return name_str[start:end].strip()
+                return name_str
+            zone_deter['x_axis_target'] = zone_deter['x_axis_target'].apply(shorten_name)
     else:
         # SINGLE CENTER VIEW: Maintain direct index-optimized database connection querying for mesh zone precision
         sql_c5 = """
@@ -772,7 +783,7 @@ with col_chart5:
 
     fig_c5 = go.Figure()
     
-    # SYSTEM FIX: Toggles between a vertical bar for single centers and a spacious horizontal bar layout for long center strings
+    # SYSTEM FIX: Enforces a clean horizontal layout for All Centres, and switches to vertical only for single-center zone letters
     if selected_center == 'All Centres (Global View)':
         fig_c5.add_trace(go.Bar(
             y=zone_deter['x_axis_target'], x=zone_deter['ineffective_cycles'], 
@@ -786,7 +797,7 @@ with col_chart5:
             x0=current_relay_limit, x1=current_relay_limit, 
             line=dict(color="#C0392B", width=3, dash="dash"), name="SLA Target Limit"
         )
-        layout_dict = dict(title=title_heading, font_family="Arial", margin=dict(t=75, b=60, l=350, r=40), xaxis=dict(title=axis_heading, range=[0, max(15, zone_deter['ineffective_cycles'].max() + 2)]))
+        layout_dict = dict(title=title_heading, font_family="Arial", margin=dict(t=75, b=60, l=220, r=40), xaxis=dict(title=axis_heading, range=[0, max(15, int(zone_deter['ineffective_cycles'].max()) + 2)]))
     else:
         fig_c5.add_trace(go.Bar(
             x=zone_deter['x_axis_target'], y=zone_deter['ineffective_cycles'], 
@@ -799,7 +810,7 @@ with col_chart5:
             y0=current_relay_limit, y1=current_relay_limit, 
             line=dict(color="#C0392B", width=3, dash="dash"), name="SLA Target Limit"
         )
-        layout_dict = dict(title=title_heading, font_family="Arial", margin=dict(t=75, b=60, l=40, r=40), xaxis=dict(title=axis_heading, type="category", tickangle=0), yaxis=dict(title="Ineffective Countermeasure Cycles", range=[0, max(15, zone_deter['ineffective_cycles'].max() + 2)]))
+        layout_dict = dict(title=title_heading, font_family="Arial", margin=dict(t=75, b=60, l=40, r=40), xaxis=dict(title=axis_heading, type="category", tickangle=0), yaxis=dict(title="Ineffective Countermeasure Cycles", range=[0, max(15, int(zone_deter['ineffective_cycles'].max()) + 2)]))
 
     fig_c5.update_layout(**layout_dict)
     st.plotly_chart(fig_c5, width="stretch")
