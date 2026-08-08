@@ -731,19 +731,31 @@ with col_chart5:
     conn_c5 = psycopg2.connect(supabase_uri)
     
     if selected_center == 'All Centres (Global View)':
-        target_centers = list(master_df[master_df['stall_id'] == 'MASTER_NODE'].groupby('hawker_centre')['rat_detections_count'].sum().nlargest(10).index)
         placeholders = ",".join(["%s"] * len(target_centers))
+        # SYSTEM FIX: Aggregates daily max per zone per center first to handle 2-hour logs, then aggregates across the top 10 centers
         sql_c5 = f"""
-            SELECT t.zone_cluster, t.rat_detections_count, t.deterrence_triggered
-            FROM nea_telemetry t
-            WHERE t.hawker_centre IN ({placeholders}) AND t.stall_id = 'MASTER_NODE';
+            SELECT date_str, zone_cluster, MAX(rat_detections_count) as max_rats, MAX(deterrence_triggered) as max_deter
+            FROM (
+                SELECT EXTRACT(DATE FROM timestamp)::text as date_str, hawker_centre, zone_cluster, rat_detections_count, deterrence_triggered
+                FROM nea_telemetry
+                WHERE hawker_centre IN ({placeholders}) AND stall_id = 'MASTER_NODE'
+            ) sub
+            GROUP BY date_str, zone_cluster;
         """
-        zone_deter = pd.read_sql_query(sql_c5, conn_c5, params=tuple(target_centers))
+        raw_deter = pd.read_sql_query(sql_c5, conn_c5, params=tuple(target_centers))
+        # Final aggregation to compute the clean historical sum of maximum operational cycles across all top 10 centers
+        zone_deter = raw_deter.groupby('zone_cluster').agg({'max_rats': 'sum', 'max_deter': 'sum'}).reset_index()
+        zone_deter.columns = ['zone_cluster', 'rat_detections_count', 'deterrence_triggered']
     else:
+        # SYSTEM FIX: Groups by zone_cluster at the database layer to pull all mesh zones cleanly for the targeted center view
         sql_c5 = """
-            SELECT t.zone_cluster, t.rat_detections_count, t.deterrence_triggered
+            SELECT t.zone_cluster, 
+                   MAX(t.rat_detections_count) AS rat_detections_count, 
+                   MAX(t.deterrence_triggered) AS deterrence_triggered
             FROM nea_telemetry t
-            WHERE t.hawker_centre = %s AND t.stall_id = 'MASTER_NODE';
+            WHERE t.hawker_centre = %s AND t.stall_id = 'MASTER_NODE'
+            GROUP BY t.zone_cluster
+            ORDER BY t.zone_cluster;
         """
         zone_deter = pd.read_sql_query(sql_c5, conn_c5, params=(selected_center,))
         
@@ -757,20 +769,20 @@ with col_chart5:
 
     fig_c5 = go.Figure()
     fig_c5.add_trace(go.Bar(x=zone_deter['zone_cluster'], y=zone_deter['ineffective_cycles'], name='Ineffective Cycles', marker_color=bar_colors))
-
-    # SHAPE 1: SLA Target Limit Line mapping threshold rules clearly over your cluster tracks
+    
+    # SHAPE 1: SLA Target Limit line mapping threshold rules clearly over your cluster tracks
     fig_c5.add_shape(
-        type="line", x0=-0.5, x1=len(zone_deter['zone_cluster'])-0.5, 
+        type="line", x0=-0.5, x1=len(zone_deter['zone_cluster'])-0.5,
         y0=current_relay_limit, y1=current_relay_limit, 
         line=dict(color="#C0392B", width=3, dash="dash"), 
         name="SLA Target Limit"
     )
 
     fig_c5.update_layout(
-        title="Ineffective Deterrence Countermeasure Cycles by Mesh Cluster Zone",
+        title="Ineffective Deterrence Countermeasure Cycles by Mesh Cluster Zone", 
         font_family="Arial", 
         margin=dict(t=75, b=20, l=10, r=10),
-        xaxis=dict(title="Mesh Cluster Zone"),
+        xaxis=dict(title="Mesh Cluster Zone", type="category"), 
         yaxis=dict(title="Ineffective Countermeasure Cycles", range=[0, max(15, zone_deter['ineffective_cycles'].max() + 2)], dtick=2)
     )
     st.plotly_chart(fig_c5, width="stretch")
