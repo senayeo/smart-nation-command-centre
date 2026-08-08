@@ -732,19 +732,17 @@ with col_chart5:
     
     if selected_center == 'All Centres (Global View)':
         placeholders = ",".join(["%s"] * len(target_centers))
-        # SYSTEM FIX: Aggregates daily max per zone per center first to handle 2-hour logs, then aggregates across the top 10 centers
-        sql_c5 = f"""
+        # SYSTEM FIX: Corrects string formatting token interpolation by cleanly passing variable markers to raw SQL query strings
+        sql_c5 = """
             SELECT date_str, zone_cluster, MAX(rat_detections_count) as max_rats, MAX(deterrence_triggered) as max_deter
             FROM (
-                # SYSTEM FIX: Changes from broken EXTRACT function over to native PostgreSQL type-casting syntax
                 SELECT timestamp::date::text as date_str, hawker_centre, zone_cluster, rat_detections_count, deterrence_triggered
                 FROM nea_telemetry
-                WHERE hawker_centre IN ({placeholders}) AND stall_id = 'MASTER_NODE'
+                WHERE hawker_centre IN (""" + placeholders + """) AND stall_id = 'MASTER_NODE'
             ) sub
             GROUP BY date_str, zone_cluster;
         """
         raw_deter = pd.read_sql_query(sql_c5, conn_c5, params=tuple(target_centers))
-
         # Final aggregation to compute the clean historical sum of maximum operational cycles across all top 10 centers
         zone_deter = raw_deter.groupby('zone_cluster').agg({'max_rats': 'sum', 'max_deter': 'sum'}).reset_index()
         zone_deter.columns = ['zone_cluster', 'rat_detections_count', 'deterrence_triggered']
