@@ -729,26 +729,28 @@ with col_chart5:
     # --- POSTGRES CONVERSION: CHART 5 DETERRENCE ---
     supabase_uri = st.secrets["SUPABASE_URI"]
     conn_c5 = psycopg2.connect(supabase_uri)
-    
     if selected_center == 'All Centres (Global View)':
         placeholders = ",".join(["%s"] * len(target_centers))
-        # SYSTEM FIX: Dynamic subquery pulls ONLY the absolute latest calendar date (last night's activity) and groups totals by facility name
-        sql_c5 = f"""
-            SELECT hawker_centre, SUM(max_rats - max_deter) AS ineffective_cycles
+        # SYSTEM FIX: Extracts the absolute latest active date entry from master_df memory to guarantee clean dynamic data rendering
+        latest_date_target = master_df['date_str'].max() if 'date_str' in master_df.columns else datetime.now().strftime('%Y-%m-%d')
+        
+        sql_c5 = """
+            SELECT hawker_centre AS x_axis_target,
+                   SUM(max_rats - max_deter) AS ineffective_cycles
             FROM (
                 SELECT hawker_centre, zone_cluster, 
                        MAX(rat_detections_count) AS max_rats, 
                        MAX(deterrence_triggered) AS max_deter
                 FROM nea_telemetry
-                WHERE hawker_centre IN ({placeholders}) AND stall_id = 'MASTER_NODE'
-                  AND timestamp::date = (SELECT MAX(timestamp::date) FROM nea_telemetry)
+                WHERE hawker_centre IN (""" + placeholders + """) AND stall_id = 'MASTER_NODE'
+                  AND timestamp::date::text = %s
                 GROUP BY hawker_centre, zone_cluster
             ) sub
             GROUP BY hawker_centre;
         """
-        zone_deter = pd.read_sql_query(sql_c5, conn_c5, params=tuple(target_centers))
-        # Safely align column names to prevent downstream layout name mismatches
-        zone_deter.columns = ['x_axis_target', 'ineffective_cycles']
+        # Safely pass both your target centers array and your latest log date variable as clean query arguments
+        query_params = tuple(target_centers) + (latest_date_target,)
+        zone_deter = pd.read_sql_query(sql_c5, conn_c5, params=query_params)
     else:
         # We will update the single center branch in Step 2 to align name variables safely
         # SYSTEM FIX: Groups by zone_cluster at the database layer and matches column tracking targets to prevent chart layout crashes
