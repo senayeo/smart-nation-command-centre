@@ -668,12 +668,12 @@ with tab3:
         selected_div = reg_data[0] if reg_data else "Unknown Office"
         live_postcode = reg_data[1] if reg_data else "050335"
         
-        # SYSTEM FIX: Explicitly defines column names to prevent ID count alignment type crashes
+        # SYSTEM FIX: Correctly maps Tab 3 inputs straight to deterrence_triggered while forcing rodent counts to stay at 0
         cursor.execute("""
             INSERT INTO nea_telemetry (timestamp, nea_division, hawker_centre, stall_id, zone_cluster, fill_level, lid_breaches_count, rat_detections_count, pir_wakeups_count, deterrence_triggered)
-            VALUES (%s, %s, %s, %s, %s, 0, 0, %s, 0, 0);
+            VALUES (%s, %s, %s, %s, %s, 0, 0, 0, 0, %s);
         """, (now_str, selected_div, selected_center, "MASTER_NODE", selected_zone, int(inp_relay)))
-        
+
         conn.commit()
         cursor.close()
         conn.close()
