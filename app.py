@@ -427,7 +427,12 @@ with col_chart2:
     # --- NEW CHART 2: CONTINUOUS 15-Day HISTORICAL MONTHLY OBSERVATION TIMELINE ---
     # SYSTEM FIX: Forces global averages to pull from master_df instead of center_trends when All Centres is active
     if selected_center == 'All Centres (Global View)':
-        f1_history = master_df.groupby('date_str').agg({
+        # SYSTEM FIX: Extracts daily max per center first to isolate peak telemetry, then averages them collectively across top 10 zones
+        daily_max_per_center = master_df.groupby(['date_str', 'hawker_centre']).agg({
+            'fill_level': 'max',
+            'lid_breaches_count': 'max'
+        }).reset_index()
+        f1_history = daily_max_per_center.groupby('date_str').agg({
             'fill_level': 'mean',
             'lid_breaches_count': 'mean'
         }).reset_index()
