@@ -307,9 +307,9 @@ else:
         </div>
     """, unsafe_allow_html=True)
 
+master_df['date_str'] = master_df['timestamp'].dt.strftime('%Y-%m-%d')
 center_trends['date_str'] = center_trends['timestamp'].dt.strftime('%Y-%m-%d')
-# SYSTEM FIX: Extracts from the master table so the timeline stays a full 15 days wide when "All Centres" is active
-unique_db_dates = sorted(master_df['timestamp'].dt.strftime('%Y-%m-%d').unique())[-15:]
+unique_db_dates = sorted(master_df['date_str'].unique())[-15:]
 
 # --- ROW 1: SNAPSHOT VS TIME-SERIES LINE (ARRANGED SIDE-BY-SIDE IN PAIRS) ---
 col_chart1, col_chart2 = st.columns(2)
