@@ -796,11 +796,7 @@ with col_chart5:
         ))
         axis_heading = "Ineffective Countermeasure Cycles"
         title_heading = "Last-Night Operational Countermeasure Profile: Top 10 High-Risk Centers"
-        fig_c5.add_shape(
-            type="line", y0=-0.5, y1=len(zone_deter['x_axis_target'])-0.5,
-            x0=current_relay_limit, x1=current_relay_limit, 
-            line=dict(color="#C0392B", width=3, dash="dash"), name="SLA Target Limit"
-        )
+        # REMOVED THE GLOBAL LINE SHAPE ENTIRELY FROM HERE
         layout_dict = dict(title=title_heading, font_family="Arial", margin=dict(t=75, b=60, l=220, r=40), xaxis=dict(title=axis_heading, range=[0, max(15, int(zone_deter['ineffective_cycles'].max()) + 2)]))
     else:
         fig_c5.add_trace(go.Bar(
@@ -809,6 +805,7 @@ with col_chart5:
         ))
         axis_heading = "Mesh Cluster Zone"
         title_heading = "Ineffective Deterrence Countermeasure Cycles by Mesh Cluster Zone"
+        # The SLA target line remains active ONLY inside the single center view
         fig_c5.add_shape(
             type="line", x0=-0.5, x1=len(zone_deter['x_axis_target'])-0.5,
             y0=current_relay_limit, y1=current_relay_limit, 
