@@ -307,9 +307,8 @@ else:
         </div>
     """, unsafe_allow_html=True)
 
-
 center_trends['date_str'] = center_trends['timestamp'].dt.strftime('%Y-%m-%d')
-# SYSTEM FIX: Forces the timeline to look at the unfiltered master table, keeping the chart 15 days wide in all center views
+# SYSTEM FIX: Extracts from the master table so the timeline stays a full 15 days wide when "All Centres" is active
 unique_db_dates = sorted(master_df['timestamp'].dt.strftime('%Y-%m-%d').unique())[-15:]
 
 # --- ROW 1: SNAPSHOT VS TIME-SERIES LINE (ARRANGED SIDE-BY-SIDE IN PAIRS) ---
@@ -456,7 +455,7 @@ with col_chart2:
         margin=dict(t=75, b=60, l=10, r=60), 
         xaxis=dict(
             title="15-Day Monthly Observation Timeline", 
-            tickangle=0,
+            tickangle=-45,
             type="category",
             # Force the viewport boundary to span exactly from day 1 to day 15 of your historical baseline array
             range=[unique_db_dates[0], unique_db_dates[-1]]
@@ -646,6 +645,7 @@ with col_chart4:
         margin=dict(t=75, b=60, l=10, r=60), 
         xaxis=dict(
             title="15-Day Monthly Observation Timeline",
+            tickangle=-45,
             type="category",
             range=[unique_db_dates, unique_db_dates[-1]]
         ),
@@ -802,7 +802,7 @@ with col_chart6:
         xaxis=dict(
             title="15-Day Monthly Observation Timeline",
             type="category",
-            tickangle=0,
+            tickangle=-45,
             range=[unique_db_dates, unique_db_dates[-1]]
         ),
         legend=dict(
