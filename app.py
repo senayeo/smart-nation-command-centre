@@ -527,88 +527,108 @@ else:
 col_chart3, col_chart4 = st.columns(2)
 
 with col_chart3:
-    # SYSTEM FIX: Corrects the inner subquery WHERE clause by removing the invalid outer t1 alias to clear the DatabaseError
     # --- POSTGRES CONVERSION: CHART 3 SURVEILLANCE ---
     supabase_uri = st.secrets["SUPABASE_URI"]
     conn_c3 = psycopg2.connect(supabase_uri)
     
     if selected_center == 'All Centres (Global View)':
-        placeholders_c3 = ",".join(["%s"] * len(target_centers))
-        sql_c3 = f"""
-            SELECT t1.zone_cluster, t1.rat_detections_count, t1.pir_wakeups_count
-            FROM nea_telemetry t1
-            INNER JOIN (
-                SELECT zone_cluster, MAX(id) as max_id
-                FROM nea_telemetry
-                WHERE hawker_centre IN ({placeholders_c3}) AND stall_id = 'MASTER_NODE'
-                GROUP BY zone_cluster
-            ) t2 ON t1.id = t2.max_id
-            WHERE t1.hawker_centre IN ({placeholders_c3}) AND t1.stall_id = 'MASTER_NODE'
-            ORDER BY t1.zone_cluster;
-        """
-        zone_surv = pd.read_sql_query(sql_c3, conn_c3, params=tuple(target_centers) + tuple(target_centers))
-    else:
+        # SYSTEM FIX: Window ranking extracts the absolute latest state per individual facility across all table history for rat detections
         sql_c3 = """
-            SELECT t1.zone_cluster, t1.rat_detections_count, t1.pir_wakeups_count
-            FROM nea_telemetry t1
-            INNER JOIN (
-                SELECT zone_cluster, MAX(id) as max_id
+            SELECT hawker_centre AS x_axis_target,
+                   SUM(rat_detections_count) AS rat_detections_count
+            FROM (
+                SELECT hawker_centre, zone_cluster, rat_detections_count,
+                       ROW_NUMBER() OVER (PARTITION BY hawker_centre, zone_cluster ORDER BY timestamp DESC) as rn
                 FROM nea_telemetry
-                WHERE hawker_centre = %s AND stall_id = 'MASTER_NODE'
-                GROUP BY zone_cluster
-            ) t2 ON t1.id = t2.max_id
-            WHERE t1.hawker_centre = %s AND t1.stall_id = 'MASTER_NODE'
-            ORDER BY t1.zone_cluster;
+                WHERE stall_id = 'MASTER_NODE'
+            ) sub
+            WHERE rn = 1
+            GROUP BY hawker_centre
+            ORDER BY rat_detections_count ASC
+            LIMIT 10;
         """
-        zone_surv = pd.read_sql_query(sql_c3, conn_c3, params=(selected_center, selected_center))
+        zone_surv = pd.read_sql_query(sql_c3, conn_c3)
+        
+        # USER TRICK IMPLEMENTATION: Shortens long center names by extracting text inside brackets dynamically
+        if not zone_surv.empty and 'x_axis_target' in zone_surv.columns:
+            def shorten_name(name_str):
+                name_str = str(name_str).strip()
+                if "(" in name_str and ")" in name_str:
+                    start = name_str.find("(") + 1
+                    end = name_str.find(")")
+                    return name_str[start:end].strip()
+                return name_str
+            zone_surv['x_axis_target'] = zone_surv['x_axis_target'].apply(shorten_name)
+    else:
+        # SINGLE CENTER VIEW: Maintain direct index-optimized database connection querying for mesh zone precision (PERFECTION)
+        if selected_center == 'All Centres (Global View)':
+            placeholders_c3 = ",".join(["%s"] * len(target_centers))
+            sql_c3 = f"""
+                SELECT t1.zone_cluster AS x_axis_target, t1.rat_detections_count, t1.pir_wakeups_count
+                FROM nea_telemetry t1
+                INNER JOIN (
+                    SELECT zone_cluster, MAX(id) as max_id
+                    FROM nea_telemetry
+                    WHERE hawker_centre IN ({placeholders_c3}) AND stall_id = 'MASTER_NODE'
+                    GROUP BY zone_cluster
+                ) t2 ON t1.id = t2.max_id
+                WHERE t1.hawker_centre IN ({placeholders_c3}) AND t1.stall_id = 'MASTER_NODE'
+                ORDER BY t1.zone_cluster;
+            """
+            zone_surv = pd.read_sql_query(sql_c3, conn_c3, params=tuple(target_centers) + tuple(target_centers))
+        else:
+            sql_c3 = """
+                SELECT t1.zone_cluster AS x_axis_target, t1.rat_detections_count, t1.pir_wakeups_count
+                FROM nea_telemetry t1
+                INNER JOIN (
+                    SELECT zone_cluster, MAX(id) as max_id
+                    FROM nea_telemetry
+                    WHERE hawker_centre = %s AND stall_id = 'MASTER_NODE'
+                    GROUP BY zone_cluster
+                ) t2 ON t1.id = t2.max_id
+                WHERE t1.hawker_centre = %s AND t1.stall_id = 'MASTER_NODE'
+                ORDER BY t1.zone_cluster;
+            """
+            zone_surv = pd.read_sql_query(sql_c3, conn_c3, params=(selected_center, selected_center))
+            
     conn_c3.close()
 
     if zone_surv.empty:
-        zone_surv = pd.DataFrame([{'zone_cluster': z, 'rat_detections_count': 0, 'pir_wakeups_count': 0} for z in ['A','B','C','D','E','F']])
+        if selected_center == 'All Centres (Global View)':
+            fallback_centers = ["Maxwell Food Centre", "Chinatown Complex", "Hong Lim Complex", "Tiong Bahru Market", "Tekka Centre", "Geylang Serai Market", "Amoy Street Food Centre", "Old Airport Road Food Centre", "Chomp Chomp Food Centre", "Golden Mile Food Centre"]
+            zone_surv = pd.DataFrame([{'x_axis_target': c, 'rat_detections_count': 0} for c in fallback_centers])
+        else:
+            zone_surv = pd.DataFrame([{'x_axis_target': z, 'rat_detections_count': 0, 'pir_wakeups_count': 0} for z in ['A','B','C','D','E','F']])
 
-    # SYSTEM FIX: Corrects the dictionary lookup key to sync perfectly with your backend configuration tables
     current_rat_limit = float(system_configs.get('ai_threshold', 2.0))
-
-    # SYSTEM FIX: Shifted target metrics matrix to rat_detections_count to resolve pristine profile display bug
-    c3_max_rats = int(zone_surv['rat_detections_count'].max()) if not zone_surv.empty else 0
-    c3_ceil_rats = max(5, math.ceil(c3_max_rats * 1.15))
-
-    # SYSTEM FIX: Enforces strict type casting and boundary checks to match your backend threshold conditions perfectly
     bar_colors_c3 = ['#C0392B' if int(val) > current_rat_limit else '#95A5A6' for val in zone_surv['rat_detections_count']]
     
     fig_c3 = go.Figure()
     
-    # TRACE 1: Pure single-axis sensor activity tracking profile matching Chart 5 layout properties
-    fig_c3.add_trace(
-        go.Bar(
-            x=zone_surv['zone_cluster'], 
-            y=zone_surv['rat_detections_count'],
-            name='Verified YOLOv8 Rodent Sighting Count',
-            marker_color=bar_colors_c3
+    # SYSTEM FIX: Enforces clean horizontal layouts for All Centres, and preserves your pristine single-center vertical zones
+    if selected_center == 'All Centres (Global View)':
+        fig_c3.add_trace(go.Bar(
+            y=zone_surv['x_axis_target'], x=zone_surv['rat_detections_count'], 
+            name='Verified Rodent Sightings', marker_color=bar_colors_c3, orientation='h'
+        ))
+        axis_heading = "Verified YOLOv8 Rodent Sighting Count"
+        title_heading = "Last-Night Operational Surveillance Profile: Top 10 High-Risk Centers"
+        layout_dict = dict(title=title_heading, font_family="Arial", margin=dict(t=75, b=60, l=220, r=40), xaxis=dict(title=axis_heading, range=[0, max(10, int(zone_surv['rat_detections_count'].max()) + 2)]))
+    else:
+        fig_c3.add_trace(go.Bar(
+            x=zone_surv['x_axis_target'], y=zone_surv['rat_detections_count'], 
+            name='Verified YOLOv8 Rodent Sighting Count', marker_color=bar_colors_c3
+        ))
+        axis_heading = "Mesh Cluster Zone"
+        title_heading = "Night-time Rodent Surveillance (Feature 2 & 3): Profile by Mesh Cluster Zone"
+        fig_c3.add_shape(
+            type="line", x0=-0.5, x1=len(zone_surv['x_axis_target'])-0.5, 
+            y0=current_rat_limit, y1=current_rat_limit, 
+            line=dict(color="#C0392B", width=3, dash="dash"), name=f"Pest SLA Limit ({int(current_rat_limit)} Rodents)"
         )
-    )
-    
-    # SHAPE 1: Injects your authentic horizontal trigger boundary limit line across the active cluster tracking blocks
-    fig_c3.add_shape(
-        type="line", x0=-0.5, x1=len(zone_surv['zone_cluster'])-0.5,
-        y0=current_rat_limit, y1=current_rat_limit,
-        line=dict(color="#C0392B", width=3, dash="dash"),
-        name=f"Pest SLA Limit ({int(current_rat_limit)} Rodents)"
-    )
-    
-    # SYSTEM FIX: Synchronized Chart 3 labels and axis definitions with the backend Tab 2 data structures
-    fig_c3.update_layout(
-        title="Night-time Rodent Surveillance (Feature 2 & 3): Profile by Mesh Cluster Zone", 
-        font_family="Arial", 
-        margin=dict(t=75, b=60, l=10, r=10),
-        xaxis=dict(title="Mesh Cluster Zone"),
-        yaxis=dict(
-            title="Feature 3: Verified YOLOv8 Rodent Sighting Count",
-            range=[0, c3_ceil_rats],
-            tickformat="d"
-        )
-    )
+        layout_dict = dict(title=title_heading, font_family="Arial", margin=dict(t=75, b=60, l=40, r=40), xaxis=dict(title=axis_heading, type="category", tickangle=0), yaxis=dict(title="Feature 3: Verified YOLOv8 Rodent Sighting Count", range=[0, max(5, int(zone_surv['rat_detections_count'].max()) + 1)], tickformat="d"))
 
+    fig_c3.update_layout(**layout_dict)
     st.plotly_chart(fig_c3, width="stretch")
 
 with col_chart4:
