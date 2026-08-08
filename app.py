@@ -308,7 +308,7 @@ else:
     """, unsafe_allow_html=True)
 
 center_trends['date_str'] = center_trends['timestamp'].dt.strftime('%Y-%m-%d')
-unique_db_dates = sorted(center_trends['date_str'].unique())[-30:]
+unique_db_dates = sorted(center_trends['date_str'].unique())[:15]
 
 # --- ROW 1: SNAPSHOT VS TIME-SERIES LINE (ARRANGED SIDE-BY-SIDE IN PAIRS) ---
 col_chart1, col_chart2 = st.columns(2)
@@ -413,39 +413,37 @@ with col_chart1:
 with col_chart2:
     # --- NEW CHART 2: CONTINUOUS 15-Day HISTORICAL MONTHLY OBSERVATION TIMELINE ---
 
-    # SYSTEM FIX: Groups by raw timestamp to restore smooth intra-day time-series telemetry curves across Chart 2
-    f1_history = center_trends.groupby('timestamp').agg({
+    # SYSTEM RESTORATION: Reverts to daily string grouping to lock your perfect 15-day horizontal timeline spread
+    f1_history = center_trends.groupby('date_str').agg({
         'fill_level': 'mean',
         'lid_breaches_count': 'mean'
     }).reset_index()
-    
-    # SYSTEM FIX: Dynamically calculates vertical padding headroom to mirror Chart 4's timeline axis scaling rules
+    f1_history = f1_history[f1_history['date_str'].isin(unique_db_dates)].sort_values('date_str')
+
+    # Calculate vertical scale padding headroom matching operational bounds
     max_history_lids = int(f1_history['lid_breaches_count'].max()) if not f1_history.empty else 10
     ceil_history_lids = max(25, math.ceil(max_history_lids * 1.25))
 
-    # SYSTEM FIX: Converted horizontal coordinates to datetime objects and removed category locks to eliminate timeline text collision
     fig_timeline1 = make_subplots(specs=[[{"secondary_y": True}]])
     
     fig_timeline1.add_trace(
         go.Scatter(
-            # SYSTEM FIX: Changes date_str over to your true high-granularity timestamp variable to prevent fatal KeyErrors
-            x=f1_history['timestamp'],
+            x=f1_history['date_str'],
             y=f1_history['fill_level'],
             name='Mean Zone Fill Level (%)',
-            mode='lines+markers',
-            line=dict(color='#2ECC71', width=2.5)
+            mode="lines+markers",
+            line=dict(color="#2ECC71", width=2.5)
         ),
         secondary_y=False
     )
     
     fig_timeline1.add_trace(
         go.Scatter(
-            # SYSTEM FIX: Changes date_str over to your true high-granularity timestamp variable to prevent fatal KeyErrors
-            x=f1_history['timestamp'],
+            x=f1_history['date_str'],
             y=f1_history['lid_breaches_count'],
             name='Open Bins (<100% Fill, >5 Mins) Count',
-            mode='lines+markers',
-            line=dict(color='#3498DB', width=2.5, dash='dash')
+            mode="lines+markers",
+            line=dict(color="#3498DB", width=2.5, dash="dash")
         ),
         secondary_y=True
     )
@@ -457,7 +455,8 @@ with col_chart2:
         xaxis=dict(
             title="15-Day Monthly Observation Timeline", 
             tickangle=0,
-            # SYSTEM FIX: Locks the horizontal viewport window to force your full historical 15-day layout to render
+            type="category",
+            # Force the viewport boundary to span exactly from day 1 to day 15 of your historical baseline array
             range=[unique_db_dates[0], unique_db_dates[-1]]
         ),
         legend=dict(
@@ -593,47 +592,48 @@ with col_chart3:
 with col_chart4:
     # --- RESTORED ORIGINAL UNTRUNCATED SURVEILLANCE VALIDATION TIMELINE ---
     if selected_center == 'All Centres (Global View)':
-        # SYSTEM FIX: Groups by raw timestamp to restore smooth intra-day time-series telemetry curves across the dashboard timelines
-        daily_summary = center_trends[center_trends['stall_id'] == 'MASTER_NODE'].groupby('timestamp').agg({
-            'pir_wakeups_count': 'sum',
+        daily_summary = center_trends[center_trends['stall_id'] == 'MASTER_NODE'].groupby('date_str').agg({
+            'pir_wakeups_count': 'sum', 
             'rat_detections_count': 'sum'
         }).reset_index()
     else:
-        daily_summary = center_trends[center_trends['stall_id'] == 'MASTER_NODE'].groupby('timestamp').agg({
-            'pir_wakeups_count': 'max',
+        daily_summary = center_trends[center_trends['stall_id'] == 'MASTER_NODE'].groupby('date_str').agg({
+            'pir_wakeups_count': 'max', 
             'rat_detections_count': 'max'
         }).reset_index()
-
-    # SYSTEM FIX: Dynamic metric ceiling boundary calculation logic
+        
+    daily_summary = daily_summary[daily_summary['date_str'].isin(unique_db_dates)].sort_values('date_str')
+    
+    # Calculate vertical scale padding headroom matching operational bounds
     max_val_pir = int(daily_summary['pir_wakeups_count'].max()) if not daily_summary.empty else 10
     max_val_rats = int(daily_summary['rat_detections_count'].max()) if not daily_summary.empty else 5
-
+    
     dynamic_ceil_pir = max(15, math.ceil(max_val_pir * 1.15))
     dynamic_ceil_rats = max(5, math.ceil(max_val_rats * 1.15))
-
+    
     fig_c4 = make_subplots(specs=[[{"secondary_y": True}]])
-
-    # TRACE 1: Add primary line trace (Left Axis) - Tracking true timestamp sequences
+    
+    # TRACE 1: Add primary line trace (Left Axis) - Tracking true date strings
     fig_c4.add_trace(
         go.Scatter(
-            x=daily_summary['timestamp'],
-            y=daily_summary['pir_wakeups_count'],
+            x=daily_summary['date_str'], 
+            y=daily_summary['pir_wakeups_count'], 
             name='Feature 2: PIR Sensor Activity Count',
-            mode='lines+markers',
+            mode="lines+markers", 
             line=dict(color="#95A5A6", width=2.5)
-        ),
+        ), 
         secondary_y=False
     )
-
-    # TRACE 2: Add secondary line trace (Right Axis) - Tracking true timestamp sequences
+    
+    # TRACE 2: Add secondary line trace (Right Axis) - Tracking true date strings
     fig_c4.add_trace(
         go.Scatter(
-            x=daily_summary['timestamp'],
-            y=daily_summary['rat_detections_count'],
+            x=daily_summary['date_str'], 
+            y=daily_summary['rat_detections_count'], 
             name='Feature 3: Verified YOLOv8 Rodent Sighting Count',
-            mode='lines+markers',
+            mode="lines+markers", 
             line=dict(color="#E74C3C", width=2.5, dash="dash")
-        ),
+        ), 
         secondary_y=True
     )
     
@@ -642,14 +642,19 @@ with col_chart4:
         title="Night-time Rodent Surveillance (Feature 2 & 3): Time-Series Validation Timeline", 
         font_family="Arial", 
         margin=dict(t=75, b=60, l=10, r=60), 
-        xaxis=dict(title="15-Day Monthly Observation Timeline", range=[unique_db_dates[0], unique_db_dates[-1]]),
+        xaxis=dict(
+            title="15-Day Monthly Observation Timeline",
+            type="category",
+            range=[unique_db_dates, unique_db_dates[-1]]
+        ),
         legend=dict(
-            orientation="h", 
-            yanchor="top", 
+            orientation="h",
+            yanchor="top",
             y=-0.25,
-            xanchor="center", 
+            xanchor="center",
             x=0.5
         ),
+
         yaxis=dict(
             title=dict(text="Feature 2: PIR Sensor Activity Count", font=dict(color="#95A5A6")), 
             tickfont=dict(color="#95A5A6"),
@@ -744,12 +749,13 @@ with col_chart5:
     st.plotly_chart(fig_c5, width="stretch")
 
 with col_chart6:
-    # --- NEW CHART 6: TIME-SERIES TIMELINE FOR FEATURE 2 & 4 AUTOMATED COUNTERMEASURES ---
-    f4_history = center_trends[center_trends['stall_id'] == 'MASTER_NODE'].groupby('timestamp').agg({
+    # SYSTEM RESTORATION: Reverts to daily string grouping to lock your perfect 15-day horizontal timeline spread perfectly
+    f4_history = center_trends[center_trends['stall_id'] == 'MASTER_NODE'].groupby('date_str').agg({
         'pir_wakeups_count': 'max',
         'rat_detections_count': 'max',
         'deterrence_triggered': 'max'
     }).reset_index()
+    f4_history = f4_history[f4_history['date_str'].isin(unique_db_dates)].sort_values('date_str')
 
     # Vectorized calculation matching your exact Feature 4 hardware failure tracking logic
     f4_history['ineffective_cycles'] = (f4_history['pir_wakeups_count'] - f4_history['deterrence_triggered']).clip(lower=0)
@@ -763,10 +769,10 @@ with col_chart6:
 
     fig_c6 = make_subplots(specs=[[{"secondary_y": True}]])
 
-    # # 1. Primary Line Trace (Left Axis — Feature 2 Activity perfectly aligned with Chart 4 naming)
+    # 1. Primary Line Trace (Left Axis — Feature 2 Activity perfectly aligned with Chart 4 naming)
     fig_c6.add_trace(
         go.Scatter(
-            x=f4_history['timestamp'],
+            x=f4_history['date_str'],
             y=f4_history['pir_wakeups_count'],
             name="Feature 2: PIR Sensor Activity Count",
             mode="lines+markers",
@@ -775,10 +781,10 @@ with col_chart6:
         secondary_y=False
     )
 
-    # # 2. Secondary Line Trace (Right Axis — Feature 4 Failure Cycles)
+    # 2. Secondary Line Trace (Right Axis — Feature 4 Failure Cycles)
     fig_c6.add_trace(
         go.Scatter(
-            x=f4_history['timestamp'],
+            x=f4_history['date_str'],
             y=f4_history['ineffective_cycles'],
             name="Feature 4: Ineffective Deterrence Cycles",
             mode="lines+markers",
@@ -786,17 +792,16 @@ with col_chart6:
         ),
         secondary_y=True
     )
-    
-    # 3. Synchronize Layout and Horizontal Centered Legend with Chart 4 Standards
+
     fig_c6.update_layout(
         title="Countermeasure Performance (Feature 2 & 4): Time-Series Observation Timeline",
         font_family="Arial",
-        margin=dict(t=75, b=60, l=40, r=60), # Expanded left margin padding to 40px to completely prevent text clipping
+        margin=dict(t=75, b=60, l=40, r=60),
         xaxis=dict(
             title="15-Day Monthly Observation Timeline",
+            type="category",
             tickangle=0,
-            # SYSTEM FIX: Locks the horizontal viewport window using explicit index markers to enforce the full 15-day layout
-            range=[unique_db_dates[0], unique_db_dates[-1]]
+            range=[unique_db_dates, unique_db_dates[-1]]
         ),
         legend=dict(
             orientation="h",
