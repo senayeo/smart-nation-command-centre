@@ -731,15 +731,19 @@ with col_chart5:
     conn_c5 = psycopg2.connect(supabase_uri)
     
     if selected_center == 'All Centres (Global View)':
-        # SYSTEM FIX: Dynamic SQL pulls the true total count of ineffective cycles across all zones per hawker center from last night's logs
+        # SYSTEM FIX: Window ranking extracts the absolute latest entry per individual center/zone across all history to cleanly support mixed dates and live simulation pushes
         sql_c5 = """
             SELECT hawker_centre AS x_axis_target,
                    SUM(CASE WHEN rat_detections_count > deterrence_triggered THEN rat_detections_count - deterrence_triggered ELSE 0 END) AS ineffective_cycles
-            FROM nea_telemetry
-            WHERE stall_id = 'MASTER_NODE'
-              AND timestamp::date = (SELECT MAX(timestamp::date) FROM nea_telemetry)
+            FROM (
+                SELECT hawker_centre, zone_cluster, rat_detections_count, deterrence_triggered,
+                       ROW_NUMBER() OVER (PARTITION BY hawker_centre, zone_cluster ORDER BY timestamp DESC) as rn
+                FROM nea_telemetry
+                WHERE stall_id = 'MASTER_NODE'
+            ) sub
+            WHERE rn = 1
             GROUP BY hawker_centre
-            ORDER BY ineffective_cycles DESC
+            ORDER BY ineffective_cycles ASC
             LIMIT 10;
         """
         zone_deter = pd.read_sql_query(sql_c5, conn_c5)
@@ -761,34 +765,43 @@ with col_chart5:
     if zone_deter.empty:
         zone_deter = pd.DataFrame([{'x_axis_target': z, 'rat_detections_count': 0, 'deterrence_triggered': 0, 'ineffective_cycles': 0} for z in ['A','B','C','D','E','F']])
 
-    # Compute operational failure metrics cleanly if not already aggregated by the global subquery
     if 'ineffective_cycles' not in zone_deter.columns:
         zone_deter['ineffective_cycles'] = zone_deter.apply(lambda r: max(0, int(r['rat_detections_count']) - int(r['deterrence_triggered'])), axis=1)
         
     bar_colors = ['#E74C3C' if val > current_relay_limit else '#2ECC71' for val in zone_deter['ineffective_cycles']]
 
     fig_c5 = go.Figure()
-    fig_c5.add_trace(go.Bar(x=zone_deter['x_axis_target'], y=zone_deter['ineffective_cycles'], name='Ineffective Cycles', marker_color=bar_colors))
     
-    # SHAPE 1: SLA Target Limit line threshold mapping rules
-    fig_c5.add_shape(
-        type="line", x0=-0.5, x1=len(zone_deter['x_axis_target'])-0.5,
-        y0=current_relay_limit, y1=current_relay_limit, 
-        line=dict(color="#C0392B", width=3, dash="dash"), 
-        name="SLA Target Limit"
-    )
+    # SYSTEM FIX: Toggles between a vertical bar for single centers and a spacious horizontal bar layout for long center strings
+    if selected_center == 'All Centres (Global View)':
+        fig_c5.add_trace(go.Bar(
+            y=zone_deter['x_axis_target'], x=zone_deter['ineffective_cycles'], 
+            name='Ineffective Cycles', marker_color=bar_colors, orientation='h'
+        ))
+        axis_heading = "Ineffective Countermeasure Cycles"
+        title_heading = "Last-Night Operational Countermeasure Profile: Top 10 High-Risk Centers"
+        # Draw the target line threshold vertically over the horizontal page canvas layout
+        fig_c5.add_shape(
+            type="line", y0=-0.5, y1=len(zone_deter['x_axis_target'])-0.5,
+            x0=current_relay_limit, x1=current_relay_limit, 
+            line=dict(color="#C0392B", width=3, dash="dash"), name="SLA Target Limit"
+        )
+        layout_dict = dict(title=title_heading, font_family="Arial", margin=dict(t=75, b=60, l=350, r=40), xaxis=dict(title=axis_heading, range=[0, max(15, zone_deter['ineffective_cycles'].max() + 2)]))
+    else:
+        fig_c5.add_trace(go.Bar(
+            x=zone_deter['x_axis_target'], y=zone_deter['ineffective_cycles'], 
+            name='Ineffective Cycles', marker_color=bar_colors
+        ))
+        axis_heading = "Mesh Cluster Zone"
+        title_heading = "Ineffective Deterrence Countermeasure Cycles by Mesh Cluster Zone"
+        fig_c5.add_shape(
+            type="line", x0=-0.5, x1=len(zone_deter['x_axis_target'])-0.5,
+            y0=current_relay_limit, y1=current_relay_limit, 
+            line=dict(color="#C0392B", width=3, dash="dash"), name="SLA Target Limit"
+        )
+        layout_dict = dict(title=title_heading, font_family="Arial", margin=dict(t=75, b=60, l=40, r=40), xaxis=dict(title=axis_heading, type="category", tickangle=0), yaxis=dict(title="Ineffective Countermeasure Cycles", range=[0, max(15, zone_deter['ineffective_cycles'].max() + 2)]))
 
-    # SYSTEM FIX: Dynamically customizes layout text headings based on the active selection panel drawer view state
-    axis_heading = "Top 10 High-Risk Hawker Centres Nationwide" if selected_center == 'All Centres (Global View)' else "Mesh Cluster Zone"
-    chart_heading = "Last-Night Operational Countermeasure Profile: Top 10 High-Risk Centers" if selected_center == 'All Centres (Global View)' else "Ineffective Deterrence Countermeasure Cycles by Mesh Cluster Zone"
-
-    fig_c5.update_layout(
-        title=chart_heading, 
-        font_family="Arial", 
-        margin=dict(t=75, b=60, l=40, r=40),
-        xaxis=dict(title=axis_heading, type="category", tickangle=0), 
-        yaxis=dict(title="Ineffective Countermeasure Cycles", range=[0, max(15, zone_deter['ineffective_cycles'].max() + 2)])
-    )
+    fig_c5.update_layout(**layout_dict)
     st.plotly_chart(fig_c5, width="stretch")
 
 with col_chart6:
