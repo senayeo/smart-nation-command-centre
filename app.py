@@ -312,7 +312,8 @@ col_chart1, col_chart2 = st.columns(2)
 with col_chart1:
     # --- ORIGINAL UNALTERED CHART 1 DATA INGESTION SUITE ---
     # SYSTEM FIX: Separates the metrics so fill level takes a rolling average while lid count snaps instantly to the latest pushed record
-    zone_waste = center_trends.sort_values('timestamp').groupby('zone_cluster').tail(4).groupby('zone_cluster').agg({'fill_level': 'mean', 'lid_breaches_count': 'last'}).reset_index()
+    # SYSTEM FIX: Forces unmapped null values to process as a clean 0 to prevent backward historical rollbacks
+    zone_waste = center_trends.sort_values('timestamp').groupby('zone_cluster').tail(4).groupby('zone_cluster').agg({'fill_level': 'mean', 'lid_breaches_count': 'last'}).fillna(0).reset_index()
     
     # SYSTEM FIX: Pulled instantly from the global master dictionary configuration to eliminate lagging disk connections
     current_fill_limit = float(system_configs.get('fill_threshold', 75.0))
