@@ -428,22 +428,24 @@ with col_chart2:
     
     fig_timeline1.add_trace(
         go.Scatter(
-            x=pd.to_datetime(f1_history['date_str']), # Converted to datetime object arrays
+            # SYSTEM FIX: Changes date_str over to your true high-granularity timestamp variable to prevent fatal KeyErrors
+            x=f1_history['timestamp'],
             y=f1_history['fill_level'],
-            name='Mean Zone Fill Level (%)', # Locked-in Step 2 Terminology
-            mode="lines+markers",
-            line=dict(color="#2ECC71", width=2.5)
+            name='Mean Zone Fill Level (%)',
+            mode='lines+markers',
+            line=dict(color='#2ECC71', width=2.5)
         ),
         secondary_y=False
     )
     
     fig_timeline1.add_trace(
         go.Scatter(
-            x=pd.to_datetime(f1_history['date_str']), # Converted to datetime object arrays
+            # SYSTEM FIX: Changes date_str over to your true high-granularity timestamp variable to prevent fatal KeyErrors
+            x=f1_history['timestamp'],
             y=f1_history['lid_breaches_count'],
-            name='Open Bins (<100% Fill, >5 Mins) Count', # Locked-in Step 2 Terminology
-            mode="lines+markers",
-            line=dict(color="#5DADE2", width=2.5, dash="dash")
+            name='Open Bins (<100% Fill, >5 Mins) Count',
+            mode='lines+markers',
+            line=dict(color='#3498DB', width=2.5, dash='dash')
         ),
         secondary_y=True
     )
