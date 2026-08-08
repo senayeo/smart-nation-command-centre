@@ -532,20 +532,15 @@ with col_chart3:
     conn_c3 = psycopg2.connect(supabase_uri)
     
     if selected_center == 'All Centres (Global View)':
-        # SYSTEM FIX: Eliminates MASTER_NODE block constraints and extracts the absolute last recorded maximum snapshot per center
-        sql_c3 = """
-            SELECT hawker_centre AS x_axis_target, rat_detections_count
-            FROM (
-                SELECT hawker_centre, rat_detections_count,
-                       ROW_NUMBER() OVER (PARTITION BY hawker_centre ORDER BY timestamp DESC) as rn
-                FROM nea_telemetry
-            ) sub
-            WHERE rn = 1
-            ORDER BY rat_detections_count DESC
-            LIMIT 10;
-        """
-        zone_surv = pd.read_sql_query(sql_c3, conn_c3)
-        
+        # SYSTEM FIX: Sources data directly from the pre-calculated latest_snapshots frame to match the GIS Hotspot Map perfectly
+        if not latest_snapshots.empty and 'total_rats' in latest_snapshots.columns:
+            # Sort centers by rodent count, extract the top 10 highest risk hubs, and match structural column targets
+            top_10_snapshots = latest_snapshots.sort_values(by='total_rats', ascending=False).head(10).copy()
+            zone_surv = top_10_snapshots[['hawker_centre', 'total_rats']].copy()
+            zone_surv.columns = ['x_axis_target', 'rat_detections_count']
+        else:
+            zone_surv = pd.DataFrame(columns=['x_axis_target', 'rat_detections_count'])
+            
         # USER TRICK IMPLEMENTATION: Shortens long center names by extracting text inside brackets dynamically
         if not zone_surv.empty and 'x_axis_target' in zone_surv.columns:
             def shorten_name(name_str):
@@ -556,6 +551,9 @@ with col_chart3:
                     return name_str[start:end].strip()
                 return name_str
             zone_surv['x_axis_target'] = zone_surv['x_axis_target'].apply(shorten_name)
+            
+        # Re-sort in ascending order right before plotting so that horizontal bar charts rank highest to lowest down the page
+        zone_surv = zone_surv.sort_values(by='rat_detections_count', ascending=True)
     else:
         # SINGLE CENTER VIEW: Maintain direct index-optimized database connection querying for mesh zone precision (UNTOUCHED)
         if selected_center == 'All Centres (Global View)':
