@@ -742,27 +742,28 @@ current_relay_limit = float(system_configs.get('relay_threshold', 8.0))
 
 with col_chart5:
     # --- POSTGRES CONVERSION: CHART 5 DETERRENCE ---
-    supabase_uri = st.secrets["SUPABASE_URI"]
-    conn_c5 = psycopg2.connect(supabase_uri)
-    
     if selected_center == 'All Centres (Global View)':
-        # SYSTEM FIX: Window ranking extracts the absolute latest state per individual stall across all historical logs
-        sql_c5 = """
-            SELECT hawker_centre AS x_axis_target,
-                   SUM(CASE WHEN rat_detections_count > deterrence_triggered THEN rat_detections_count - deterrence_triggered ELSE 0 END) AS ineffective_cycles
-            FROM (
-                SELECT hawker_centre, stall_id, zone_cluster, rat_detections_count, deterrence_triggered,
-                       ROW_NUMBER() OVER (PARTITION BY hawker_centre, stall_id, zone_cluster ORDER BY timestamp DESC) as rn
-                FROM nea_telemetry
-                WHERE stall_id != 'MASTER_NODE'
-            ) sub
-            WHERE rn = 1
-            GROUP BY hawker_centre
-            ORDER BY ineffective_cycles ASC
-            LIMIT 10;
-        """
-        zone_deter = pd.read_sql_query(sql_c5, conn_c5)
-        
+        # SYSTEM FIX: Sources data directly from pre-loaded master_df rows to instantly capture Tab 3 simulation tests
+        if not master_df.empty:
+            # 1. Filter to master node rows tracking your core countermeasure streams
+            f4_data = master_df[master_df['stall_id'] == 'MASTER_NODE'].copy()
+            
+            if not f4_data.empty:
+                # 2. Extract the last recorded maximum state per center to prevent 2-hour row duplication errors
+                center_maxes = f4_data.groupby('hawker_centre').agg({
+                    'rat_detections_count': 'max',
+                    'deterrence_triggered': 'max'
+                }).reset_index()
+                
+                # 3. Compute your true live ineffective countermeasure failure metrics
+                center_maxes['ineffective_cycles'] = (center_maxes['rat_detections_count'] - center_maxes['deterrence_triggered']).clip(lower=0)
+                zone_deter = center_maxes[['hawker_centre', 'ineffective_cycles']].copy()
+                zone_deter.columns = ['x_axis_target', 'ineffective_cycles']
+            else:
+                zone_deter = pd.DataFrame(columns=['x_axis_target', 'ineffective_cycles'])
+        else:
+            zone_deter = pd.DataFrame(columns=['x_axis_target', 'ineffective_cycles'])
+            
         # USER TRICK IMPLEMENTATION: Shortens long center names by extracting text inside brackets dynamically
         if not zone_deter.empty and 'x_axis_target' in zone_deter.columns:
             def shorten_name(name_str):
@@ -773,8 +774,13 @@ with col_chart5:
                     return name_str[start:end].strip()
                 return name_str
             zone_deter['x_axis_target'] = zone_deter['x_axis_target'].apply(shorten_name)
+            
+        # Re-sort in ascending order right before plotting so that horizontal bar charts rank highest to lowest down the page
+        zone_deter = zone_deter.sort_values(by='ineffective_cycles', ascending=True)
     else:
-        # SINGLE CENTER VIEW: Maintain direct index-optimized database connection querying for mesh zone precision
+        # SINGLE CENTER VIEW: Maintain direct index-optimized database connection querying for mesh zone precision (UNTOUCHED)
+        supabase_uri = st.secrets["SUPABASE_URI"]
+        conn_c5 = psycopg2.connect(supabase_uri)
         sql_c5 = """
             SELECT t.zone_cluster AS x_axis_target, 
                    MAX(t.rat_detections_count) AS rat_detections_count, 
@@ -785,8 +791,7 @@ with col_chart5:
             ORDER BY t.zone_cluster;
         """
         zone_deter = pd.read_sql_query(sql_c5, conn_c5, params=(selected_center,))
-        
-    conn_c5.close()
+        conn_c5.close()
 
     # Fallback to verify clean presentation states if columns are fully blank or zero-filled
     if zone_deter.empty:
