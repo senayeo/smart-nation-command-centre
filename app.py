@@ -442,7 +442,8 @@ with col_chart2:
             'lid_breaches_count': 'mean'
         }).reset_index()
         
-    f1_history = f1_history[f1_history['date_str'].isin(unique_db_dates)].sort_values('date_str')
+    # SYSTEM FIX: Clips off the incomplete final data entry day to stop the straight-line drop to 0 in single center view
+    f1_history = f1_history[f1_history['date_str'].isin(unique_db_dates[:-1])].sort_values('date_str')
 
     # Calculate vertical scale padding headroom matching operational bounds
     max_history_lids = int(f1_history['lid_breaches_count'].max()) if not f1_history.empty else 10
@@ -628,7 +629,8 @@ with col_chart4:
             'rat_detections_count': 'max'
         }).reset_index()
         
-    daily_summary = daily_summary[daily_summary['date_str'].isin(unique_db_dates)].sort_values('date_str')
+    # SYSTEM FIX: Clips off the incomplete final data entry day to stop the straight-line drop to 0 in single center view
+    daily_summary = daily_summary[daily_summary['date_str'].isin(unique_db_dates[:-1])].sort_values('date_str')
     
     # Calculate vertical scale padding headroom matching operational bounds
     max_val_pir = int(daily_summary['pir_wakeups_count'].max()) if not daily_summary.empty else 10
@@ -793,7 +795,8 @@ with col_chart6:
             'deterrence_triggered': 'max'
         }).reset_index()
         
-    f4_history = f4_history[f4_history['date_str'].isin(unique_db_dates)].sort_values('date_str')
+    # SYSTEM FIX: Clips off the incomplete final data entry day to stop the straight-line drop to 0 in single center view
+    f4_history = f4_history[f4_history['date_str'].isin(unique_db_dates[:-1])].sort_values('date_str')
 
     # Vectorized calculation matching your exact Feature 4 hardware failure tracking logic
     f4_history['ineffective_cycles'] = (f4_history['pir_wakeups_count'] - f4_history['deterrence_triggered']).clip(lower=0)
