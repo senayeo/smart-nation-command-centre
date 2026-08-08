@@ -413,8 +413,8 @@ with col_chart1:
 with col_chart2:
     # --- NEW CHART 2: CONTINUOUS 15-Day HISTORICAL MONTHLY OBSERVATION TIMELINE ---
 
-    # SYSTEM FIX: Removes the broken stall_id exclusion filter so the global view master node metrics render cleanly on the timeline
-    f1_history = center_trends.groupby('date_str').agg({
+    # SYSTEM FIX: Groups by raw timestamp to restore smooth intra-day time-series telemetry curves across Chart 2
+    f1_history = center_trends.groupby('timestamp').agg({
         'fill_level': 'mean',
         'lid_breaches_count': 'mean'
     }).reset_index()
@@ -589,51 +589,47 @@ with col_chart3:
 with col_chart4:
     # --- RESTORED ORIGINAL UNTRUNCATED SURVEILLANCE VALIDATION TIMELINE ---
     if selected_center == 'All Centres (Global View)':
-        # SYSTEM FIX: Correctly aggregates cumulative data across all top 10 locations to drive global view dynamic ranges
-        daily_summary = center_trends[center_trends['stall_id'] == 'MASTER_NODE'].groupby('date_str').agg({
-            'pir_wakeups_count': 'sum', 
+        # SYSTEM FIX: Groups by raw timestamp to restore smooth intra-day time-series telemetry curves across the dashboard timelines
+        daily_summary = center_trends[center_trends['stall_id'] == 'MASTER_NODE'].groupby('timestamp').agg({
+            'pir_wakeups_count': 'sum',
             'rat_detections_count': 'sum'
         }).reset_index()
     else:
-        # Localized target center tracks single facility node thresholds cleanly
-        daily_summary = center_trends[center_trends['stall_id'] == 'MASTER_NODE'].groupby('date_str').agg({
-            'pir_wakeups_count': 'max', 
+        daily_summary = center_trends[center_trends['stall_id'] == 'MASTER_NODE'].groupby('timestamp').agg({
+            'pir_wakeups_count': 'max',
             'rat_detections_count': 'max'
         }).reset_index()
-        
-    daily_summary = daily_summary[daily_summary['date_str'].isin(unique_db_dates)]
-    
-    # SYSTEM FIX: Fully dynamic maximum boundaries calculated directly from active metrics array
+
+    # SYSTEM FIX: Dynamic metric ceiling boundary calculation logic
     max_val_pir = int(daily_summary['pir_wakeups_count'].max()) if not daily_summary.empty else 10
     max_val_rats = int(daily_summary['rat_detections_count'].max()) if not daily_summary.empty else 5
-    
-    # SYSTEM FIX: Preserves your working dynamic database math for large datasets while enforcing safe whole-number floors for small metrics
+
     dynamic_ceil_pir = max(15, math.ceil(max_val_pir * 1.15))
     dynamic_ceil_rats = max(5, math.ceil(max_val_rats * 1.15))
-    
+
     fig_c4 = make_subplots(specs=[[{"secondary_y": True}]])
-    
-    # Primary line trace (Left Axis)
+
+    # TRACE 1: Add primary line trace (Left Axis) - Tracking true timestamp sequences
     fig_c4.add_trace(
         go.Scatter(
-            x=daily_summary['date_str'], 
-            y=daily_summary['pir_wakeups_count'], 
+            x=daily_summary['timestamp'],
+            y=daily_summary['pir_wakeups_count'],
             name='Feature 2: PIR Sensor Activity Count',
-            mode="lines+markers", 
+            mode='lines+markers',
             line=dict(color="#95A5A6", width=2.5)
-        ), 
+        ),
         secondary_y=False
     )
-    
-    # Secondary line trace (Right Axis)
+
+    # TRACE 2: Add secondary line trace (Right Axis) - Tracking true timestamp sequences
     fig_c4.add_trace(
         go.Scatter(
-            x=daily_summary['date_str'], 
-            y=daily_summary['rat_detections_count'], 
+            x=daily_summary['timestamp'],
+            y=daily_summary['rat_detections_count'],
             name='Feature 3: Verified YOLOv8 Rodent Sighting Count',
-            mode="lines+markers", 
+            mode='lines+markers',
             line=dict(color="#E74C3C", width=2.5, dash="dash")
-        ), 
+        ),
         secondary_y=True
     )
     
@@ -745,28 +741,28 @@ with col_chart5:
 
 with col_chart6:
     # --- NEW CHART 6: TIME-SERIES TIMELINE FOR FEATURE 2 & 4 AUTOMATED COUNTERMEASURES ---
-    f4_history = center_trends[center_trends['stall_id'] == 'MASTER_NODE'].groupby('date_str').agg({
+    f4_history = center_trends[center_trends['stall_id'] == 'MASTER_NODE'].groupby('timestamp').agg({
         'pir_wakeups_count': 'max',
         'rat_detections_count': 'max',
         'deterrence_triggered': 'max'
     }).reset_index()
-    
+
     # Vectorized calculation matching your exact Feature 4 hardware failure tracking logic
-    f4_history['ineffective_cycles'] = (f4_history['rat_detections_count'] - f4_history['deterrence_triggered']).clip(lower=0)
+    f4_history['ineffective_cycles'] = (f4_history['pir_wakeups_count'] - f4_history['deterrence_triggered']).clip(lower=0)
     
     # Calculate vertical scale padding headroom matching Chart 4 rules
     max_c6_pir = int(f4_history['pir_wakeups_count'].max()) if not f4_history.empty else 10
-    ceil_c6_pir = max(15, math.ceil(max_c6_pir * 1.25))
+    ceil_c6_pir = max(15, math.ceil(max_c6_pir * 1.15))
     
     max_c6_fail = int(f4_history['ineffective_cycles'].max()) if not f4_history.empty else 10
-    ceil_c6_fail = max(15, math.ceil(max_c6_fail * 1.25))
-    
+    ceil_c6_fail = max(15, math.ceil(max_c6_fail * 1.15))
+
     fig_c6 = make_subplots(specs=[[{"secondary_y": True}]])
-    
-    # 1. Primary Line Trace (Left Axis - Feature 2 Activity perfectly aligned with Chart 4 naming)
+
+    # # 1. Primary Line Trace (Left Axis — Feature 2 Activity perfectly aligned with Chart 4 naming)
     fig_c6.add_trace(
         go.Scatter(
-            x=pd.to_datetime(f4_history['date_str']),
+            x=f4_history['timestamp'],
             y=f4_history['pir_wakeups_count'],
             name="Feature 2: PIR Sensor Activity Count",
             mode="lines+markers",
@@ -774,11 +770,11 @@ with col_chart6:
         ),
         secondary_y=False
     )
-    
-    # 2. Secondary Line Trace (Right Axis - Feature 4 Failure Cycles)
+
+    # # 2. Secondary Line Trace (Right Axis — Feature 4 Failure Cycles)
     fig_c6.add_trace(
         go.Scatter(
-            x=pd.to_datetime(f4_history['date_str']),
+            x=f4_history['timestamp'],
             y=f4_history['ineffective_cycles'],
             name="Feature 4: Ineffective Deterrence Cycles",
             mode="lines+markers",
