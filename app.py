@@ -310,6 +310,7 @@ else:
 center_trends['date_str'] = center_trends['timestamp'].dt.strftime('%Y-%m-%d')
 unique_db_dates = sorted(center_trends['date_str'].unique())[-15:]
 
+
 # --- ROW 1: SNAPSHOT VS TIME-SERIES LINE (ARRANGED SIDE-BY-SIDE IN PAIRS) ---
 col_chart1, col_chart2 = st.columns(2)
 
