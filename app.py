@@ -742,28 +742,27 @@ current_relay_limit = float(system_configs.get('relay_threshold', 8.0))
 
 with col_chart5:
     # --- POSTGRES CONVERSION: CHART 5 DETERRENCE ---
+    supabase_uri = st.secrets["SUPABASE_URI"]
+    conn_c5 = psycopg2.connect(supabase_uri)
+    
     if selected_center == 'All Centres (Global View)':
-        # SYSTEM FIX: Sources data directly from pre-loaded master_df rows to instantly capture Tab 3 simulation tests
-        if not master_df.empty:
-            # 1. Filter to master node rows tracking your core countermeasure streams
-            f4_data = master_df[master_df['stall_id'] == 'MASTER_NODE'].copy()
-            
-            if not f4_data.empty:
-                # 2. Extract the last recorded maximum state per center to prevent 2-hour row duplication errors
-                center_maxes = f4_data.groupby('hawker_centre').agg({
-                    'rat_detections_count': 'max',
-                    'deterrence_triggered': 'max'
-                }).reset_index()
-                
-                # 3. Compute your true live ineffective countermeasure failure metrics
-                center_maxes['ineffective_cycles'] = (center_maxes['rat_detections_count'] - center_maxes['deterrence_triggered']).clip(lower=0)
-                zone_deter = center_maxes[['hawker_centre', 'ineffective_cycles']].copy()
-                zone_deter.columns = ['x_axis_target', 'ineffective_cycles']
-            else:
-                zone_deter = pd.DataFrame(columns=['x_axis_target', 'ineffective_cycles'])
-        else:
-            zone_deter = pd.DataFrame(columns=['x_axis_target', 'ineffective_cycles'])
-            
+        # SYSTEM FIX: Window ranking extracts deterrence_triggered directly to perfectly match where the backend Tab 3 test logs data
+        sql_c5 = """
+            SELECT hawker_centre AS x_axis_target,
+                   SUM(deterrence_triggered) AS ineffective_cycles
+            FROM (
+                SELECT hawker_centre, stall_id, zone_cluster, deterrence_triggered,
+                       ROW_NUMBER() OVER (PARTITION BY hawker_centre, stall_id, zone_cluster ORDER BY timestamp DESC) as rn
+                FROM nea_telemetry
+                WHERE stall_id != 'MASTER_NODE'
+            ) sub
+            WHERE rn = 1
+            GROUP BY hawker_centre
+            ORDER BY ineffective_cycles ASC
+            LIMIT 10;
+        """
+        zone_deter = pd.read_sql_query(sql_c5, conn_c5)
+        
         # USER TRICK IMPLEMENTATION: Shortens long center names by extracting text inside brackets dynamically
         if not zone_deter.empty and 'x_axis_target' in zone_deter.columns:
             def shorten_name(name_str):
@@ -775,23 +774,24 @@ with col_chart5:
                 return name_str
             zone_deter['x_axis_target'] = zone_deter['x_axis_target'].apply(shorten_name)
             
-        # Re-sort in ascending order right before plotting so that horizontal bar charts rank highest to lowest down the page
         zone_deter = zone_deter.sort_values(by='ineffective_cycles', ascending=True)
     else:
-        # SINGLE CENTER VIEW: Maintain direct index-optimized database connection querying for mesh zone precision (UNTOUCHED)
-        supabase_uri = st.secrets["SUPABASE_URI"]
-        conn_c5 = psycopg2.connect(supabase_uri)
+        # SINGLE CENTER VIEW SYSTEM FIX: Pulls the absolute last entry per zone and maps deterrence_triggered directly to wipe out subtraction subtraction errors
         sql_c5 = """
-            SELECT t.zone_cluster AS x_axis_target, 
-                   MAX(t.rat_detections_count) AS rat_detections_count, 
-                   MAX(t.deterrence_triggered) AS deterrence_triggered
-            FROM nea_telemetry t
-            WHERE t.hawker_centre = %s AND t.stall_id = 'MASTER_NODE'
-            GROUP BY t.zone_cluster
-            ORDER BY t.zone_cluster;
+            SELECT t1.zone_cluster AS x_axis_target, t1.deterrence_triggered AS ineffective_cycles
+            FROM nea_telemetry t1
+            INNER JOIN (
+                SELECT zone_cluster, MAX(id) as max_id
+                FROM nea_telemetry
+                WHERE hawker_centre = %s AND stall_id = 'MASTER_NODE'
+                GROUP BY zone_cluster
+            ) t2 ON t1.id = t2.max_id
+            WHERE t1.hawker_centre = %s AND t1.stall_id = 'MASTER_NODE'
+            ORDER BY t1.zone_cluster;
         """
-        zone_deter = pd.read_sql_query(sql_c5, conn_c5, params=(selected_center,))
-        conn_c5.close()
+        zone_deter = pd.read_sql_query(sql_c5, conn_c5, params=(selected_center, selected_center))
+        
+    conn_c5.close()
 
     # Fallback to verify clean presentation states if columns are fully blank or zero-filled
     if zone_deter.empty:
@@ -799,8 +799,9 @@ with col_chart5:
             fallback_centers = ["Maxwell Food Centre", "Chinatown Complex", "Hong Lim Complex", "Tiong Bahru Market", "Tekka Centre", "Geylang Serai Market", "Amoy Street Food Centre", "Old Airport Road Food Centre", "Chomp Chomp Food Centre", "Golden Mile Food Centre"]
             zone_deter = pd.DataFrame([{'x_axis_target': c, 'ineffective_cycles': 0} for c in fallback_centers])
         else:
-            zone_deter = pd.DataFrame([{'x_axis_target': z, 'rat_detections_count': 0, 'deterrence_triggered': 0, 'ineffective_cycles': 0} for z in ['A','B','C','D','E','F']])
+            zone_deter = pd.DataFrame([{'x_axis_target': z, 'ineffective_cycles': 0} for z in ['A','B','C','D','E','F']])
 
+    # Compute operational failure metrics cleanly if not already aggregated by the global or single center subquery
     if 'ineffective_cycles' not in zone_deter.columns:
         zone_deter['ineffective_cycles'] = zone_deter.apply(lambda r: max(0, int(r['rat_detections_count']) - int(r['deterrence_triggered'])), axis=1)
         
@@ -816,7 +817,6 @@ with col_chart5:
         ))
         axis_heading = "Ineffective Countermeasure Cycles"
         title_heading = "Last-Night Operational Countermeasure Profile: Top 10 High-Risk Centers"
-        # REMOVED THE GLOBAL LINE SHAPE ENTIRELY FROM HERE
         layout_dict = dict(title=title_heading, font_family="Arial", margin=dict(t=75, b=60, l=220, r=40), xaxis=dict(title=axis_heading, range=[0, max(15, int(zone_deter['ineffective_cycles'].max()) + 2)]))
     else:
         fig_c5.add_trace(go.Bar(
@@ -825,7 +825,6 @@ with col_chart5:
         ))
         axis_heading = "Mesh Cluster Zone"
         title_heading = "Ineffective Deterrence Countermeasure Cycles by Mesh Cluster Zone"
-        # The SLA target line remains active ONLY inside the single center view
         fig_c5.add_shape(
             type="line", x0=-0.5, x1=len(zone_deter['x_axis_target'])-0.5,
             y0=current_relay_limit, y1=current_relay_limit, 
