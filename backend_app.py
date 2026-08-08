@@ -496,6 +496,14 @@ with tab2:
             label_visibility="collapsed",
             key="segmented_ai_thresh"
         )
+
+        # SYSTEM FIX: Commits your dynamic threshold toggle switch straight to the central cloud configuration table in real-time
+        conn_sync = psycopg2.connect(supabase_uri)
+        cursor_sync = conn_sync.cursor()
+        cursor_sync.execute("UPDATE system_config SET value = %s WHERE key = 'ai_threshold';", (float(new_ai_thresh),))
+        conn_sync.commit()
+        cursor_sync.close()
+        conn_sync.close()
         
         # SYSTEM FIX: Second compressed divider line directly below the slider to pull the inputs up tightly
         st.markdown('<hr style="border: 0; border-top: 1px solid #E6E8EB; margin-top: 2px; margin-bottom: 6px;">', unsafe_allow_html=True)

@@ -409,10 +409,10 @@ with col_chart1:
 with col_chart2:
     # --- NEW CHART 2: CONTINUOUS 15-Day HISTORICAL MONTHLY OBSERVATION TIMELINE ---
 
-    # SYSTEM FIX: True database alignment, extracting both metrics from the stall rows and scaling to match your operational bounds
-    f1_history = center_trends[center_trends['stall_id'] != 'MASTER_NODE'].groupby('date_str').agg({
-        'fill_level': 'mean', # Extracts and tracks the true average stall fill capacity baseline
-        'lid_breaches_count': lambda x: round(x.mean() * 15.0, 0) # Normalises the raw stall baseline to a realistic 15-25 whole unit count
+    # SYSTEM FIX: Removes the broken stall_id exclusion filter so the global view master node metrics render cleanly on the timeline
+    f1_history = center_trends.groupby('date_str').agg({
+        'fill_level': 'mean',
+        'lid_breaches_count': 'mean'
     }).reset_index()
     
     # SYSTEM FIX: Dynamically calculates vertical padding headroom to mirror Chart 4's timeline axis scaling rules
@@ -537,8 +537,8 @@ with col_chart3:
     if zone_surv.empty:
         zone_surv = pd.DataFrame([{'zone_cluster': z, 'rat_detections_count': 0, 'pir_wakeups_count': 0} for z in ['A','B','C','D','E','F']])
 
-    # SYSTEM FIX: Extract the dynamic Feature 3 PIR Activity Limit directly from the global system dictionary configuration
-    current_rat_limit = float(system_configs.get('surveillance_threshold', 2.0))
+    # SYSTEM FIX: Corrects the dictionary lookup key to sync perfectly with your backend configuration tables
+    current_rat_limit = float(system_configs.get('ai_threshold', 2.0))
 
     # SYSTEM FIX: Shifted target metrics matrix to rat_detections_count to resolve pristine profile display bug
     c3_max_rats = int(zone_surv['rat_detections_count'].max()) if not zone_surv.empty else 0
