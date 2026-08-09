@@ -637,7 +637,7 @@ with tab3:
         st.markdown('<p style="color: #31333F; font-size: 14px; margin-bottom: 4px;">Simulated Telemetry Input: 5V Automated Deterrence Hardware Relay Activations</p>', unsafe_allow_html=True)
         col_l3_w1, _ = st.columns([0.6, 2.5])
         with col_l3_w1:
-            inp_relay = st.number_input("", min_value=1, max_value=50, value=12, step=1, key="inp_relays", label_visibility="collapsed")
+            inp_relay = st.number_input("", min_value=0, max_value=50, value=12, step=1, key="inp_relays", label_visibility="collapsed")
         # Automatically maps indicators to your push variables since presence is confirmed
         inp_rats = 1
     else:
