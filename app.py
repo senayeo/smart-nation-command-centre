@@ -8,7 +8,27 @@ from datetime import datetime
 import os
 from assets import BASE64_IMAGE
 
-st.set_page_config(page_title="Smart Waste & Rodent Prevention Console", layout="wide", page_icon="🇸🇬")
+# KEEP ONLY THIS SINGLE CONFIGURATION CALL AT THE VERY TOP
+st.set_page_config(page_title="Smart Waste & Rodent Prevention Console", layout="wide", page_icon="sg")
+
+# INJECT ONLY THE CSS MARKDOWN STREAM RIGHT UNDERNEATH IT
+st.markdown(
+    """
+    <style>
+    /* Completely hide the Streamlit top-right GitHub deployment and action menu headers */
+    #MainMenu {visibility: hidden;}
+    footer {visibility: hidden;}
+    .viewerBadge_container__171uN {display: none !important;}
+    button[title="View source on GitHub"] {display: none !important;}
+    a[href*="github.com"] {display: none !important;}
+    ul[data-testid="stActionButtonIcon"] {display: none !important;}
+    div[data-testid="stActionButton"] {display: none !important;}
+    [data-testid="stToolbar"] {visibility: hidden; display: none !important;}
+    [data-testid="stDecoration"] {display: none !important;}
+    </style>
+    """,
+    unsafe_allow_html=True
+)
 
 import psycopg2
 
@@ -746,15 +766,15 @@ with col_chart5:
     conn_c5 = psycopg2.connect(supabase_uri)
     
     if selected_center == 'All Centres (Global View)':
-        # SYSTEM FIX: Window ranking extracts deterrence_triggered directly to perfectly match where the backend Tab 3 test logs data
+        # SYSTEM FIX: Extracts the absolute last recorded state from MASTER_NODE entries to perfectly capture your backend Tab 3 test logs
         sql_c5 = """
             SELECT hawker_centre AS x_axis_target,
                    SUM(deterrence_triggered) AS ineffective_cycles
             FROM (
                 SELECT hawker_centre, stall_id, zone_cluster, deterrence_triggered,
-                       ROW_NUMBER() OVER (PARTITION BY hawker_centre, stall_id, zone_cluster ORDER BY timestamp DESC) as rn
+                       ROW_NUMBER() OVER (PARTITION BY hawker_centre, zone_cluster ORDER BY timestamp DESC) as rn
                 FROM nea_telemetry
-                WHERE stall_id != 'MASTER_NODE'
+                WHERE stall_id = 'MASTER_NODE'
             ) sub
             WHERE rn = 1
             GROUP BY hawker_centre
@@ -776,7 +796,7 @@ with col_chart5:
             
         zone_deter = zone_deter.sort_values(by='ineffective_cycles', ascending=True)
     else:
-        # SINGLE CENTER VIEW SYSTEM FIX: Pulls the absolute last entry per zone and maps deterrence_triggered directly to wipe out subtraction subtraction errors
+        # SINGLE CENTER VIEW: Maintain direct index-optimized database connection querying for mesh zone precision (UNTOUCHED)
         sql_c5 = """
             SELECT t1.zone_cluster AS x_axis_target, t1.deterrence_triggered AS ineffective_cycles
             FROM nea_telemetry t1
