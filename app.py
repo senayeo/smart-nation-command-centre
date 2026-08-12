@@ -30,21 +30,6 @@ st.markdown(
     .stSelectbox {margin-bottom: 0.4rem !important;}
     hr {margin-top: 0.5rem !important; margin-bottom: 0.5rem !important;}
     .alert-banner {padding: 7px 12px; border-radius: 4px; margin-bottom: 0px; font-family: Arial; font-size: 13px;}
-    /* Completely strips the outline borders, shadows, and backgrounds from the header Rerun button */
-    div[data-testid="stColumn"] button {
-        border: none !important;
-        background: transparent !important;
-        box-shadow: none !important;
-        color: #2c3e50 !important;
-        font-weight: bold !important;
-        font-size: 14px !important;
-        padding: 6px 12px !important;
-    }
-    div[data-testid="stColumn"] button:hover {
-        color: #102542 !important;
-        background: #f1f2f6 !important;
-        border-radius: 4px !important;
-    }
     </style>
     """,
     unsafe_allow_html=True
@@ -73,17 +58,7 @@ def run_query(query, params=None):
         cursor.close()
         conn.close()
 
-# UNIFIED HEADER NAVIGATION GRID 
-col_title, col_rerun = st.columns([0.88, 0.12], vertical_alignment="center")
-
-with col_title:
-    st.markdown("<h2 style='text-align: left; color: #102542; font-family: Arial; margin: 0; padding: 0;'>Smart Waste Management with AIoT Rodent Prevention</h2>", unsafe_allow_html=True)
-
-with col_rerun:
-    # 🔄 TRUE GUEST RERUN TRIGGER: Stripped clean of all cache commands
-    if st.button("🔄 Rerun", use_container_width=True, type="secondary", help="Triggers a native script reload while preserving dropdown states"):
-        st.rerun()       # Pure, native internal Python script rerun loop
-
+st.markdown("<h2 style='text-align: left; color: #102542; font-family: Arial;'>Smart Waste Management with AIoT Rodent Prevention</h2>", unsafe_allow_html=True)
 st.markdown("<p style='color: #7F8C8D; font-size: 13px; margin-top: -15px; margin-bottom: 25px;'><b>Operational Prototype Simulation</b> • Joint Agency (NEA Environmental Public Health / Town Councils) Smart City Ingestion & Rodent Prevention Command Centre • Developed via GovTech/OGP Architectural Evaluation Framework</p>", unsafe_allow_html=True)
 
 # STEP 1: Main Sidebar Title gets its own independent, clean layout container
@@ -92,27 +67,8 @@ st.sidebar.markdown("<h3 style='color: #102542; font-family: Arial; margin-botto
 # STEP 2: Subheading title sits in its own standalone slot with a clean internal padding-top gap
 st.sidebar.markdown("<p style='font-size: 11px; color: #7f8c8d; font-weight: bold; margin-top: 5px; padding-top: 20px; margin-bottom: 0px;'>ENVIRONMENTAL PUBLIC HEALTH OPERATIONS DEPARTMENT</p>", unsafe_allow_html=True)
 
-# =========================================================================
-# SYSTEM RE-FIX: DIRECT NATIVE CALLBACK STATE SYNCHRONIZATION
-# =========================================================================
 div_options = ["All NEA Regional Offices", "Central Regional Office (CRO)", "North West Regional Office (NWRO)", "North East Regional Office (NERO)", "South West Regional Office (SWRO)", "South East Regional Office (SERO)"]
-
-# 1. Initialize the global active selected variable securely inside memory strings
-if "saved_regional_office" not in st.session_state:
-    st.session_state["saved_regional_office"] = "All NEA Regional Offices"
-
-# 2. Callback logic engine: Forces the query variable to match the state key instantly
-def update_regional_filter():
-    pass # Session state handles the tracking value injection directly
-
-# 3. Clean widget registration: No index conflicts, locks data states instantly
-selected_div = st.sidebar.selectbox(
-    "NEA Regional Office:", 
-    div_options, 
-    key="saved_regional_office",
-    on_change=update_regional_filter
-)
-
+selected_div = st.sidebar.selectbox("NEA Regional Office:", div_options)
 
 # --- POSTGRES CONVERSION STEP 1: DROPDOWN ROUTING LOGIC ---
 if selected_div == "All NEA Regional Offices":
@@ -124,7 +80,7 @@ else:
 
 # Convert the resulting list of data tuples seamlessly into flat text layout strings
 center_list = ["All Centres (Global View)"] + [row[0] for row in center_rows]
-selected_center = st.sidebar.selectbox("Target Hawker Centre Location:", center_list, key="saved_hawker_centre")
+selected_center = st.sidebar.selectbox("Target Hawker Centre Location:", center_list)
 
 # --- POSTGRES CONVERSION STEP 2: CACHED TELEMETRY INGESTION ---
 def load_master_telemetry(selected_center, selected_div):
