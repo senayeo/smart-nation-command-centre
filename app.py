@@ -8,55 +8,77 @@ from datetime import datetime
 import os
 from assets import BASE64_IMAGE
 
-# 1. FIXED PAGE CONFIGURATION: Swapped invalid "sg" text string for a bulletproof system emoji icon asset
-st.set_page_config(
-    page_title="Smart Waste & Rodent Prevention Console", 
-    layout="wide", 
-    page_icon="📊"
-)
+# KEEP ONLY THIS SINGLE CONFIGURATION CALL AT THE VERY TOP
+st.set_page_config(page_title="Smart Waste & Rodent Prevention Console", layout="wide", page_icon="sg")
 
-# 2. PRISTINE PRODUCTION CSS FILTERS: Removed all useless, unexecutable bottom-right iframe target hacks
+# INJECT THIS UPDATED CONFIGURATION STREAM TO WIPE THE GITHUB TOOLBAR COMPLETELY and VAPORISE THE BOTTOM RIGHT CORNER ENTIRELY
 st.markdown(
     """
     <style>
-    /* Aggressively target-locks the entire right-side action toolbar to wipe out the GitHub and Fork items */
-    [data-testid="stAppDeployButton"] {display: none !important; visibility: hidden !important;}
+    /* 1. Completely target-lock and vaporise the top-right GitHub Deploy/Fork action button wrapper */
     .stAppDeployButton {display: none !important; visibility: hidden !important;}
     div[data-testid="stAppDeployButton"] {display: none !important; visibility: hidden !important;}
     
-    /* Blanket restriction to wipe out all source code tracking links from header layouts */
+    /* 2. Surgically hide the public source code exposure links from all user views */
     button[title="View source on GitHub"] {display: none !important;}
     a[href*="github.com"] {display: none !important;}
-    .viewerBadge_container__171uN {display: none !important;}
     
-    /* Removes the developer edit pencil button shortcut from the main view */
+    /* 3. Hide the edit pencil icon from the action row */
     div[data-testid="stHeader"] button:has(svg path[d*="M12.3"]) {display: none !important;}
     
-    /* Hides the 'Made with Streamlit' branding footer link text inside the options menu */
+    /* 4. Keep the generic three-dots menu but remove the 'Made with Streamlit' footer label inside it */
     footer {visibility: hidden;}
+    
+    /* ========================================================================= */
+    /* 5. FIX: AGGRESSIVE RE-ENGINEERED TARGET SELECTION FOR THE BOTTOM RIGHT SIDE */
+    
+    /* Targets the native viewer badge and completely force-closes its rendering container */
+    [data-testid="stViewerBadge"], .viewerBadge_container__171uN, iframe[title="viewer-badge"] {
+        display: none !important; 
+        visibility: hidden !important;
+        height: 0px !important;
+        width: 0px !important;
+    }
+    
+    /* Global parent element target-lock to wipe out the status widgets and toolbar overlays completely */
+    div[class*="stStatusWidget"], [data-testid="stStatusWidget"], div[id*="stStatusWidget"] {
+        display: none !important; 
+        visibility: hidden !important;
+        height: 0% !important;
+        width: 0px !important;
+        position: fixed !important;
+    }
+    
+    /* Absolute blanket override for any residual administrative layout badges popping up at the window edge */
+    div[class*="viewerBadge"], a[class*="viewerBadge"], button[class*="viewerBadge"] {
+        display: none !important;
+        visibility: hidden !important;
+    }
     </style>
     """,
     unsafe_allow_html=True
 )
 
-# 3. RELATIONAL MIDDLEWARE DATABASE DRIVERS
 import psycopg2
 
 def run_query(query, params=None):
-    supa_uri = st.secrets["SUPABASE_URI"]
-    conn = psycopg2.connect(supa_uri)
+    supabase_uri = st.secrets["SUPABASE_URI"]
+    # Open connection
+    conn = psycopg2.connect(supabase_uri)
     cursor = conn.cursor()
     try:
         if params:
             cursor.execute(query, params)
         else:
             cursor.execute(query)
+        # Fetch data immediately before closing connection lines
         results = cursor.fetchall()
         return results
     except Exception as e:
         st.error(f"❌ Query execution failed: {str(e)}")
         return []
     finally:
+        # Guarantee memory blocks close perfectly to prevent leaking database connections
         cursor.close()
         conn.close()
 
@@ -74,7 +96,7 @@ st.markdown("<h2 style='text-align: left; color: #102542; font-family: Arial;'>S
 st.markdown("<p style='color: #7F8C8D; font-size: 13px; margin-top: -15px; margin-bottom: 25px;'><b>Operational Prototype Simulation</b> • Joint Agency (NEA Environmental Public Health / Town Councils) Smart City Ingestion & Rodent Prevention Command Centre • Developed via GovTech/OGP Architectural Evaluation Framework</p>", unsafe_allow_html=True)
 
 st.sidebar.markdown("<h3 style='color: #102542; font-family: Arial; margin-bottom: 5px;'>Surveillance Control</h3>", unsafe_allow_html=True)
-st.sidebar.markdown("<p style='font-size:11px; color:#7f8c8d; margin-top:10px; margin-bottom:2px; font-weight:bold;'>ENVIRONMENTAL PUBLIC HEALTH OPERATIONS DEPARTMENT</p>", unsafe_allow_html=True)
+st.sidebar.markdown("<p style='font-size:11px; color:#7f8c8d; margin-top:5px; margin-bottom:2px; font-weight:bold;'>ENVIRONMENTAL PUBLIC HEALTH OPERATIONS DEPARTMENT</p>", unsafe_allow_html=True)
 
 div_options = ["All NEA Regional Offices", "Central Regional Office (CRO)", "North West Regional Office (NWRO)", "North East Regional Office (NERO)", "South West Regional Office (SWRO)", "South East Regional Office (SERO)"]
 selected_div = st.sidebar.selectbox("NEA Regional Office:", div_options)
