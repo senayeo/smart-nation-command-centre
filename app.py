@@ -62,24 +62,11 @@ def run_query(query, params=None):
 st.markdown("<h2 style='text-align: left; color: #102542; font-family: Arial;'>Smart Waste Management with AIoT Rodent Prevention</h2>", unsafe_allow_html=True)
 st.markdown("<p style='color: #7F8C8D; font-size: 13px; margin-top: -15px; margin-bottom: 25px;'><b>Operational Prototype Simulation</b> • Joint Agency (NEA Environmental Public Health / Town Councils) Smart City Ingestion & Rodent Prevention Command Centre • Developed via GovTech/OGP Architectural Evaluation Framework</p>", unsafe_allow_html=True)
 
-# UNIFIED CONTAINER FIX: Combines lines 64 and 65 to permanently stop layout clipping and fix filter spacing gaps
-st.sidebar.markdown(
-    """
-    <table style='border-collapse: collapse; border: none; margin: 0; padding: 0; margin-bottom: -5px; width: 100%;'>
-        <tr style='border: none; padding: 0; margin: 0;'>
-            <td style='border: none; padding: 0; margin: 0; line-height: 1.1;'>
-                <span style='color: #102542; font-family: Arial; font-size: 20px; font-weight: bold;'>Surveillance Control</span>
-            </td>
-        </tr>
-        <tr style='border: none; padding: 0; margin: 0;'>
-            <td style='border: none; margin: 0; padding: 0; padding-top: 10px; line-height: 1.2;'>
-                <span style='font-size: 11px; color: #7f8c8d; font-weight: bold; font-family: Arial; display: block;'>ENVIRONMENTAL PUBLIC HEALTH OPERATIONS DEPARTMENT</span>
-            </td>
-        </tr>
-    </table>
-    """, 
-    unsafe_allow_html=True
-)
+# STEP 1: Main Sidebar Title gets its own independent, clean layout container
+st.sidebar.markdown("<h3 style='color: #102542; font-family: Arial; margin-bottom: 0px; padding-bottom: 0px;'>Surveillance Control</h3>", unsafe_allow_html=True)
+
+# STEP 2: Subheading title sits in its own standalone slot with a clean internal padding-top gap
+st.sidebar.markdown("<p style='font-size: 11px; color: #7f8c8d; font-weight: bold; margin-top: 0px; padding-top: 8px; margin-bottom: 12px;'>ENVIRONMENTAL PUBLIC HEALTH OPERATIONS DEPARTMENT</p>", unsafe_allow_html=True)
 
 div_options = ["All NEA Regional Offices", "Central Regional Office (CRO)", "North West Regional Office (NWRO)", "North East Regional Office (NERO)", "South West Regional Office (SWRO)", "South East Regional Office (SERO)"]
 selected_div = st.sidebar.selectbox("NEA Regional Office:", div_options)
