@@ -61,17 +61,6 @@ def run_query(query, params=None):
 st.markdown("<h2 style='text-align: left; color: #102542; font-family: Arial;'>Smart Waste Management with AIoT Rodent Prevention</h2>", unsafe_allow_html=True)
 st.markdown("<p style='color: #7F8C8D; font-size: 13px; margin-top: -15px; margin-bottom: 25px;'><b>Operational Prototype Simulation</b> • Joint Agency (NEA Environmental Public Health / Town Councils) Smart City Ingestion & Rodent Prevention Command Centre • Developed via GovTech/OGP Architectural Evaluation Framework</p>", unsafe_allow_html=True)
 
-# =========================================================================
-# SYSTEM RUNNING ENGINE: DISPLAYS LOADING INDICATOR DURING REMOTE DB INGESTION
-# =========================================================================
-
-# This block forces a clean loading status spinner to draw ONLY while queries run
-with st.spinner("⏳ Synchronization in progress: Fetching active AIoT telemetry records from database..."):
-    # Target your active data queries down the script to execute cleanly inside this block.
-    # For example, if you run a query like: center_rows = run_query("SELECT ..."), 
-    # indent that specific line right underneath this block.
-    pass
-
 # STEP 1: Main Sidebar Title gets its own independent, clean layout container
 st.sidebar.markdown("<h3 style='color: #102542; font-family: Arial; margin-bottom: 3px; padding-bottom: 3px;'>Surveillance Control</h3>", unsafe_allow_html=True)
 
@@ -82,12 +71,13 @@ div_options = ["All NEA Regional Offices", "Central Regional Office (CRO)", "Nor
 selected_div = st.sidebar.selectbox("NEA Regional Office:", div_options)
 
 # --- POSTGRES CONVERSION STEP 1: DROPDOWN ROUTING LOGIC ---
-if selected_div == "All NEA Regional Offices":
-    center_query = "SELECT hawker_centre FROM hawker_registry ORDER BY hawker_centre;"
-    center_rows = run_query(center_query)
-else:
-    center_query = "SELECT hawker_centre FROM hawker_registry WHERE nea_division = %s ORDER BY hawker_centre;"
-    center_rows = run_query(center_query, (selected_div,))
+with st.spinner("⏳ Loading operational layout: Fetching active telemetry centers..."):
+    if selected_div == "All NEA Regional Offices":
+        center_query = "SELECT hawker_centre FROM hawker_registry ORDER BY hawker_centre;"
+        center_rows = run_query(center_query)
+    else:
+        center_query = "SELECT hawker_centre FROM hawker_registry WHERE nea_division = %s ORDER BY hawker_centre;"
+        center_rows = run_query(center_query, (selected_div,))
 
 # Convert the resulting list of data tuples seamlessly into flat text layout strings
 center_list = ["All Centres (Global View)"] + [row[0] for row in center_rows]
