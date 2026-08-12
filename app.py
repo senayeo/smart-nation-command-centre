@@ -11,7 +11,7 @@ from assets import BASE64_IMAGE
 # KEEP ONLY THIS SINGLE CONFIGURATION CALL AT THE VERY TOP
 st.set_page_config(page_title="Smart Waste & Rodent Prevention Console", layout="wide", page_icon="sg")
 
-# INJECT THIS UPDATED CONFIGURATION STREAM ON LINE 14 TO WIPE THE GITHUB TOOLBAR COMPLETELY
+# INJECT THIS UPDATED CONFIGURATION STREAM TO WIPE THE GITHUB TOOLBAR COMPLETELY and VAPORISE THE BOTTOM RIGHT CORNER ENTIRELY
 st.markdown(
     """
     <style>
@@ -22,13 +22,20 @@ st.markdown(
     /* 2. Surgically hide the public source code exposure links from all user views */
     button[title="View source on GitHub"] {display: none !important;}
     a[href*="github.com"] {display: none !important;}
-    .viewerBadge_container__171uN {display: none !important;}
     
     /* 3. Hide the edit pencil icon from the action row */
     div[data-testid="stHeader"] button:has(svg path[d*="M12.3"]) {display: none !important;}
     
     /* 4. Keep the generic three-dots menu but remove the 'Made with Streamlit' footer label inside it */
     footer {visibility: hidden;}
+    
+    /* ========================================================================= */
+    /* 5. NEW CRITICAL ADDITION: COMPLETELY VAPORISE THE BOTTOM-RIGHT BADGE AND TOOLBAR */
+    div[data-testid="stViewerBadge"] {display: none !important; visibility: hidden !important;}
+    .viewerBadge_container__171uN {display: none !important; visibility: hidden !important;}
+    iframe[title="viewer-badge"] {display: none !important; visibility: hidden !important;}
+    [data-testid="stStatusWidget"] {display: none !important; visibility: hidden !important;}
+    #data-testid="stStatusWidget" {display: none !important; visibility: hidden !important;}
     </style>
     """,
     unsafe_allow_html=True
