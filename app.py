@@ -65,7 +65,7 @@ st.markdown("<h2 style='text-align: left; color: #102542; font-family: Arial;'>S
 st.markdown("<p style='color: #7F8C8D; font-size: 13px; margin-top: -15px; margin-bottom: 25px;'><b>Operational Prototype Simulation</b> • Joint Agency (NEA Environmental Public Health / Town Councils) Smart City Ingestion & Rodent Prevention Command Centre • Developed via GovTech/OGP Architectural Evaluation Framework</p>", unsafe_allow_html=True)
 
 st.sidebar.markdown("<h3 style='color: #102542; font-family: Arial; margin-bottom: 5px;'>Surveillance Control</h3>", unsafe_allow_html=True)
-st.sidebar.markdown("<p style='font-size: 11px; color: #7f8c8d; margin-top: 10px; padding-top: 5px; margin-bottom: 25px; font-weight: bold;'>ENVIRONMENTAL PUBLIC HEALTH OPERATIONS DEPARTMENT</p>", unsafe_allow_html=True)
+st.sidebar.markdown("<p style='font-size: 11px; color: #7f8c8d; line-height: 1.0; margin: 0px; padding: 0px; transform: translateY(-5px); font-weight: bold;'>ENVIRONMENTAL PUBLIC HEALTH OPERATIONS DEPARTMENT</p>", unsafe_allow_html=True)
 
 div_options = ["All NEA Regional Offices", "Central Regional Office (CRO)", "North West Regional Office (NWRO)", "North East Regional Office (NERO)", "South West Regional Office (SWRO)", "South East Regional Office (SERO)"]
 selected_div = st.sidebar.selectbox("NEA Regional Office:", div_options)
