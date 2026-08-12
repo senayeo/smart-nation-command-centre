@@ -19,19 +19,24 @@ st.set_page_config(
 st.markdown(
     """
     <style>
-    /* Wipes out ONLY the Fork and GitHub code deployment links from the header row */
-    button[title="View source on GitHub"] {display: none !important;}
-    a[href*="github.com"] {display: none !important;}
-    [data-testid="stAppDeployButton"] {display: none !important; visibility: hidden !important;}
-    .stAppDeployButton {display: none !important; visibility: hidden !important;}
+    /* Target and completely remove the Fork link and GitHub icon links from guest views */
+    button[title="View source on GitHub"] {display: none !important; visibility: hidden !important;}
+    a[href*="github.com"] {display: none !important; visibility: hidden !important;}
     
-    /* Removes the developer edit pencil button shortcut from the action layout */
+    /* Target-lock the native Streamlit core deployment button classes and hide them */
+    .stAppDeployButton {display: none !important; visibility: hidden !important;}
+    div[data-testid="stAppDeployButton"] {display: none !important; visibility: hidden !important;}
+    
+    /* Hide the parent anchor links that wrap around the Fork text and GitHub svg elements */
+    header a[href*="github.com"], header a[href*="share.streamlit.io"] {
+        display: none !important;
+        visibility: hidden !important;
+    }
+    
+    /* Removes the developer edit pencil shortcut from the header action bar */
     div[data-testid="stHeader"] button:has(svg path[d*="M12.3"]) {display: none !important;}
     
-    /* REPAIR: Keeps the stToolbar active so your three-dots options button displays cleanly, but strips its background decorations */
-    [data-testid="stDecoration"] {display: none !important;}
-    
-    /* Hides the 'Made with Streamlit' branding footer link text inside the options menu */
+    /* Hide the 'Made with Streamlit' branding footer link text inside the options menu */
     footer {visibility: hidden;}
     </style>
     """,
