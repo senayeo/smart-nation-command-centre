@@ -65,9 +65,9 @@ st.markdown("<p style='color: #7F8C8D; font-size: 13px; margin-top: -15px; margi
 # UNIFIED CONTAINER FIX: Combines lines 64 and 65 to permanently stop layout clipping and fix filter spacing gaps
 st.sidebar.markdown(
     """
-    <div style='margin-bottom: 25px; padding-top: 5px;'>
-        <p style='color: #102542; font-family: Arial; font-size: 20px; font-weight: bold; margin: 0; padding: 0; line-height: 1.3;'>Surveillance Control</p>
-        <p style='font-size: 11px; color: #7f8c8d; font-weight: bold; margin: 0; padding: 0; line-height: 1.5; margin-top: 6px;'>ENVIRONMENTAL PUBLIC HEALTH OPERATIONS DEPARTMENT</p>
+    <div style='margin-bottom: 0px; padding-top: 5px;'>
+        <p style='color: #102542; font-family: Arial; font-size: 20px; font-weight: bold; margin: 0; padding: 0; line-height: 1.1;'>Surveillance Control</p>
+        <p style='font-size: 11px; color: #7f8c8d; font-weight: bold; padding: 0; line-height: 1.2; margin-top: 10px; margin-bottom: 0px;'>ENVIRONMENTAL PUBLIC HEALTH OPERATIONS DEPARTMENT</p>
     </div>
     """, 
     unsafe_allow_html=True
