@@ -15,27 +15,21 @@ st.set_page_config(page_title="Smart Waste & Rodent Prevention Console", layout=
 st.markdown(
     """
     <style>
-    /* 1. BRING BACK HEADER: Unblock the header container to let the native loading spinner render */
-    [data-testid="stHeader"] {display: flex !important; visibility: visible !important; background: transparent !important;}
-    header {display: flex !important; visibility: visible !important; background: transparent !important;}
-    
-    /* 2. SURGICAL CLEANUP: Wipe out the public Fork and GitHub icons from the header row */
-    button[title="View source on GitHub"] {display: none !important; visibility: hidden !important;}
-    a[href*="github.com"] {display: none !important; visibility: hidden !important;}
+    /* Absolute target-lock to delete the entire upper action toolbar block from the DOM tree */
+    [data-testid="stHeader"] {display: none !important; visibility: hidden !important; height: 0px !important;}
+    header {display: none !important; visibility: hidden !important; height: 0px !important;}
     .stAppDeployButton {display: none !important; visibility: hidden !important;}
-    div[data-testid="stAppDeployButton"] {display: none !important; visibility: hidden !important;}
-    header a[href*="github.com"], header a[href*="share.streamlit.io"] {display: none !important; visibility: hidden !important;}
     
-    /* 3. WIPE OUT EXTRA ICONS: Hide the developer edit pencil button shortcut */
-    div[data-testid="stHeader"] button:has(svg path[d*="M12.3"]) {display: none !important;}
+    /* Global fallback to trap any stray infrastructure code buttons pushing through */
+    button[title="View source on GitHub"] {display: none !important;}
+    a[href*="github.com"] {display: none !important;}
     
-    /* 4. CHOOSE YOUR OPTIONS MENU VIEW: */
-    /* Alternative A: Wipes out the three vertical dots completely along with the header row */
-    /* div[data-testid="stHeader"] div[data-testid="stActionButton"] {display: none !important;} */
-    
-    /* Alternative B: Keeps the vertical 3-dots pulldown but strips its background decorations */
-    [data-testid="stDecoration"] {display: none !important;}
-    footer {visibility: hidden;}
+    /* Layout block container margins and column width constraints */
+    .block-container {padding-top: 2.0rem !important; padding-bottom: 1rem !important;}
+    h2 {margin-bottom: 0.5rem !important;}
+    .stSelectbox {margin-bottom: 0.4rem !important;}
+    hr {margin-top: 0.5rem !important; margin-bottom: 0.5rem !important;}
+    .alert-banner {padding: 7px 12px; border-radius: 4px; margin-bottom: 0px; font-family: Arial; font-size: 13px;}
     </style>
     """,
     unsafe_allow_html=True
@@ -66,6 +60,17 @@ def run_query(query, params=None):
 
 st.markdown("<h2 style='text-align: left; color: #102542; font-family: Arial;'>Smart Waste Management with AIoT Rodent Prevention</h2>", unsafe_allow_html=True)
 st.markdown("<p style='color: #7F8C8D; font-size: 13px; margin-top: -15px; margin-bottom: 25px;'><b>Operational Prototype Simulation</b> • Joint Agency (NEA Environmental Public Health / Town Councils) Smart City Ingestion & Rodent Prevention Command Centre • Developed via GovTech/OGP Architectural Evaluation Framework</p>", unsafe_allow_html=True)
+
+# =========================================================================
+# SYSTEM RUNNING ENGINE: DISPLAYS LOADING INDICATOR DURING REMOTE DB INGESTION
+# =========================================================================
+
+# This block forces a clean loading status spinner to draw ONLY while queries run
+with st.spinner("⏳ Synchronization in progress: Fetching active AIoT telemetry records from database..."):
+    # Target your active data queries down the script to execute cleanly inside this block.
+    # For example, if you run a query like: center_rows = run_query("SELECT ..."), 
+    # indent that specific line right underneath this block.
+    pass
 
 # STEP 1: Main Sidebar Title gets its own independent, clean layout container
 st.sidebar.markdown("<h3 style='color: #102542; font-family: Arial; margin-bottom: 3px; padding-bottom: 3px;'>Surveillance Control</h3>", unsafe_allow_html=True)
