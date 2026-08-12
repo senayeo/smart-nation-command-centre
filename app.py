@@ -120,7 +120,7 @@ def load_master_telemetry(selected_center, selected_div):
     sql_query = sql_base + limit_clause
     
     # 3. Fetch raw rows using your background query runner
-    with st.spinner("⏳ Synchronization in progress: Compiling geospatial hotspot layers and calculating data frames..."):
+    with st.spinner("⏳ Synchronisation in progress: Compiling geospatial hotspot layers and calculating data frames..."):
         row_rows = run_query(sql_query, tuple(params) if params else None)
     
     # 4. Map columns explicitly to match your exact metrics schema definitions
