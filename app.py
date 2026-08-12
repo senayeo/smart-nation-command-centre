@@ -80,10 +80,9 @@ with col_title:
     st.markdown("<h2 style='text-align: left; color: #102542; font-family: Arial; margin: 0; padding: 0;'>Smart Waste Management with AIoT Rodent Prevention</h2>", unsafe_allow_html=True)
 
 with col_rerun:
-    # 🔄 TRUE GUEST RERUN TRIGGER: Looks completely borderless and matches keyboard 'R' behavior
+    # 🔄 TRUE GUEST RERUN TRIGGER: Stripped clean of all cache commands
     if st.button("🔄 Rerun", use_container_width=True, type="secondary", help="Triggers a native script reload while preserving dropdown states"):
-        st.clear_cache() # Evicts old cached query data blocks from memory
-        st.rerun()       # Executes an immediate internal Python rerun loop
+        st.rerun()       # Pure, native internal Python script rerun loop
 
 st.markdown("<p style='color: #7F8C8D; font-size: 13px; margin-top: -15px; margin-bottom: 25px;'><b>Operational Prototype Simulation</b> • Joint Agency (NEA Environmental Public Health / Town Councils) Smart City Ingestion & Rodent Prevention Command Centre • Developed via GovTech/OGP Architectural Evaluation Framework</p>", unsafe_allow_html=True)
 
