@@ -103,6 +103,7 @@ else:
 # Re-link the selectbox cleanly with its state key locked in place
 selected_div = st.sidebar.selectbox("NEA Regional Office:", div_options, key="saved_regional_office")
 
+
 # --- POSTGRES CONVERSION STEP 1: DROPDOWN ROUTING LOGIC ---
 if selected_div == "All NEA Regional Offices":
     center_query = "SELECT hawker_centre FROM hawker_registry ORDER BY hawker_centre;"
