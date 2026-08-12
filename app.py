@@ -15,21 +15,27 @@ st.set_page_config(page_title="Smart Waste & Rodent Prevention Console", layout=
 st.markdown(
     """
     <style>
-    /* Absolute target-lock to delete the entire upper action toolbar block from the DOM tree */
-    [data-testid="stHeader"] {display: none !important; visibility: hidden !important; height: 0px !important;}
-    header {display: none !important; visibility: hidden !important; height: 0px !important;}
+    /* 1. BRING BACK HEADER: Unblock the header container to let the native loading spinner render */
+    [data-testid="stHeader"] {display: flex !important; visibility: visible !important; background: transparent !important;}
+    header {display: flex !important; visibility: visible !important; background: transparent !important;}
+    
+    /* 2. SURGICAL CLEANUP: Wipe out the public Fork and GitHub icons from the header row */
+    button[title="View source on GitHub"] {display: none !important; visibility: hidden !important;}
+    a[href*="github.com"] {display: none !important; visibility: hidden !important;}
     .stAppDeployButton {display: none !important; visibility: hidden !important;}
+    div[data-testid="stAppDeployButton"] {display: none !important; visibility: hidden !important;}
+    header a[href*="github.com"], header a[href*="share.streamlit.io"] {display: none !important; visibility: hidden !important;}
     
-    /* Global fallback to trap any stray infrastructure code buttons pushing through */
-    button[title="View source on GitHub"] {display: none !important;}
-    a[href*="github.com"] {display: none !important;}
+    /* 3. WIPE OUT EXTRA ICONS: Hide the developer edit pencil button shortcut */
+    div[data-testid="stHeader"] button:has(svg path[d*="M12.3"]) {display: none !important;}
     
-    /* Layout block container margins and column width constraints */
-    .block-container {padding-top: 2.0rem !important; padding-bottom: 1rem !important;}
-    h2 {margin-bottom: 0.5rem !important;}
-    .stSelectbox {margin-bottom: 0.4rem !important;}
-    hr {margin-top: 0.5rem !important; margin-bottom: 0.5rem !important;}
-    .alert-banner {padding: 7px 12px; border-radius: 4px; margin-bottom: 0px; font-family: Arial; font-size: 13px;}
+    /* 4. CHOOSE YOUR OPTIONS MENU VIEW: */
+    /* Alternative A: Wipes out the three vertical dots completely along with the header row */
+    /* div[data-testid="stHeader"] div[data-testid="stActionButton"] {display: none !important;} */
+    
+    /* Alternative B: Keeps the vertical 3-dots pulldown but strips its background decorations */
+    [data-testid="stDecoration"] {display: none !important;}
+    footer {visibility: hidden;}
     </style>
     """,
     unsafe_allow_html=True
