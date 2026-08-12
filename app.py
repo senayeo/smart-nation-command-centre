@@ -23,6 +23,13 @@ st.markdown(
     /* Global fallback to trap any stray infrastructure code buttons pushing through */
     button[title="View source on GitHub"] {display: none !important;}
     a[href*="github.com"] {display: none !important;}
+    
+    /* Layout block container margins and column width constraints */
+    .block-container {padding-top: 2.0rem !important; padding-bottom: 1rem !important;}
+    h2 {margin-bottom: 0.5rem !important;}
+    .stSelectbox {margin-bottom: 0.4rem !important;}
+    hr {margin-top: 0.5rem !important; margin-bottom: 0.5rem !important;}
+    .alert-banner {padding: 7px 12px; border-radius: 4px; margin-bottom: 0px; font-family: Arial; font-size: 13px;}
     </style>
     """,
     unsafe_allow_html=True
@@ -51,21 +58,12 @@ def run_query(query, params=None):
         cursor.close()
         conn.close()
 
-st.markdown("""
-    <style>
-        .block-container { padding-top: 2.0rem !important; padding-bottom: 1rem !important; }
-        h2 { margin-bottom: 0.5rem !important; }
-        .stSelectbox { margin-bottom: 0.4rem !important; }
-        hr { margin-top: 0.5rem !important; margin-bottom: 0.5rem !important; }
-        .alert-banner { padding: 8px 12px; border-radius: 4px; margin-bottom: 6px; font-family: Arial; font-size: 13px; }
-    </style>
-""", unsafe_allow_html=True)
 
 st.markdown("<h2 style='text-align: left; color: #102542; font-family: Arial;'>Smart Waste Management with AIoT Rodent Prevention</h2>", unsafe_allow_html=True)
 st.markdown("<p style='color: #7F8C8D; font-size: 13px; margin-top: -15px; margin-bottom: 25px;'><b>Operational Prototype Simulation</b> • Joint Agency (NEA Environmental Public Health / Town Councils) Smart City Ingestion & Rodent Prevention Command Centre • Developed via GovTech/OGP Architectural Evaluation Framework</p>", unsafe_allow_html=True)
 
-st.sidebar.markdown("<h3 style='color: #102542; font-family: Arial; margin-bottom: 5px;'>Surveillance Control</h3>", unsafe_allow_html=True)
-st.sidebar.markdown("<p style='font-size: 11px; color: #7f8c8d; line-height: 1.0; margin: 0px; padding: 0px; transform: translateY(-5px); font-weight: bold;'>ENVIRONMENTAL PUBLIC HEALTH OPERATIONS DEPARTMENT</p>", unsafe_allow_html=True)
+st.sidebar.markdown("<h3 style='color: #102542; font-family: Arial; margin-bottom: 12px;'>Surveillance Control</h3>", unsafe_allow_html=True)
+st.sidebar.markdown("<p style='font-size: 11px; color: #7f8c8d; margin-top: 0px; margin-bottom: 20px; font-weight: bold;'>ENVIRONMENTAL PUBLIC HEALTH OPERATIONS DEPARTMENT</p>", unsafe_allow_html=True)
 
 div_options = ["All NEA Regional Offices", "Central Regional Office (CRO)", "North West Regional Office (NWRO)", "North East Regional Office (NERO)", "South West Regional Office (SWRO)", "South East Regional Office (SERO)"]
 selected_div = st.sidebar.selectbox("NEA Regional Office:", div_options)
