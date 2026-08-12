@@ -15,19 +15,14 @@ st.set_page_config(page_title="Smart Waste & Rodent Prevention Console", layout=
 st.markdown(
     """
     <style>
-    /* Target-lock and completely hide Streamlit's new native top-right Deploy/Fork action button wrappers */
+    /* Absolute target-lock to delete the entire upper action toolbar block from the DOM tree */
+    [data-testid="stHeader"] {display: none !important; visibility: hidden !important; height: 0px !important;}
+    header {display: none !important; visibility: hidden !important; height: 0px !important;}
     .stAppDeployButton {display: none !important; visibility: hidden !important;}
-    div[data-testid="stAppDeployButton"] {display: none !important; visibility: hidden !important;}
-    header a[href*="github.com"], header a[href*="share.streamlit.io"] {display: none !important; visibility: hidden !important;}
     
-    /* Hide the old public source code exposure and edit links from all user views */
+    /* Global fallback to trap any stray infrastructure code buttons pushing through */
     button[title="View source on GitHub"] {display: none !important;}
     a[href*="github.com"] {display: none !important;}
-    .viewerBadge_container__171uN {display: none !important;}
-    div[data-testid="stHeader"] button:has(svg path[d*="M12.3"]) {display: none !important;}
-    
-    /* Hide the 'Made with Streamlit' branding footer text inside the options menu */
-    footer {visibility: hidden;}
     </style>
     """,
     unsafe_allow_html=True
