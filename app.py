@@ -19,22 +19,19 @@ st.set_page_config(
 st.markdown(
     """
     <style>
-    /* Surgically hide the public source code exposure and fork buttons from all user views */
+    /* Wipes out ONLY the Fork and GitHub code deployment links from the header row */
+    button[title="View source on GitHub"] {display: none !important;}
+    a[href*="github.com"] {display: none !important;}
     [data-testid="stAppDeployButton"] {display: none !important; visibility: hidden !important;}
     .stAppDeployButton {display: none !important; visibility: hidden !important;}
     
-    /* Target and remove development tracking toolbars from guest layouts */
-    [data-testid="stToolbar"] {visibility: hidden; display: none !important;}
-    [data-testid="stDecoration"] {display: none !important;}
-    
-    /* Hide the source code exposure links */
-    button[title="View source on GitHub"] {display: none !important;}
-    a[href*="github.com"] {display: none !important;}
-    
-    /* Hide the developer edit pencil shortcut from the main action header bar */
+    /* Removes the developer edit pencil button shortcut from the action layout */
     div[data-testid="stHeader"] button:has(svg path[d*="M12.3"]) {display: none !important;}
     
-    /* Maintain the generic three-dots options menu for guests while hiding the Streamlit footer branding inside it */
+    /* REPAIR: Keeps the stToolbar active so your three-dots options button displays cleanly, but strips its background decorations */
+    [data-testid="stDecoration"] {display: none !important;}
+    
+    /* Hides the 'Made with Streamlit' branding footer link text inside the options menu */
     footer {visibility: hidden;}
     </style>
     """,
@@ -76,7 +73,7 @@ st.markdown("<h2 style='text-align: left; color: #102542; font-family: Arial;'>S
 st.markdown("<p style='color: #7F8C8D; font-size: 13px; margin-top: -15px; margin-bottom: 25px;'><b>Operational Prototype Simulation</b> • Joint Agency (NEA Environmental Public Health / Town Councils) Smart City Ingestion & Rodent Prevention Command Centre • Developed via GovTech/OGP Architectural Evaluation Framework</p>", unsafe_allow_html=True)
 
 st.sidebar.markdown("<h3 style='color: #102542; font-family: Arial; margin-bottom: 5px;'>Surveillance Control</h3>", unsafe_allow_html=True)
-st.sidebar.markdown("<p style='font-size:11px; color:#7f8c8d; margin-top:5px; margin-bottom:2px; font-weight:bold;'>ENVIRONMENTAL PUBLIC HEALTH OPERATIONS DEPARTMENT</p>", unsafe_allow_html=True)
+st.sidebar.markdown("<p style='font-size:11px; color:#7f8c8d; margin-top:10px; margin-bottom:2px; font-weight:bold;'>ENVIRONMENTAL PUBLIC HEALTH OPERATIONS DEPARTMENT</p>", unsafe_allow_html=True)
 
 div_options = ["All NEA Regional Offices", "Central Regional Office (CRO)", "North West Regional Office (NWRO)", "North East Regional Office (NERO)", "South West Regional Office (SWRO)", "South East Regional Office (SERO)"]
 selected_div = st.sidebar.selectbox("NEA Regional Office:", div_options)
