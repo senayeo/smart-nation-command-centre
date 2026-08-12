@@ -71,13 +71,12 @@ div_options = ["All NEA Regional Offices", "Central Regional Office (CRO)", "Nor
 selected_div = st.sidebar.selectbox("NEA Regional Office:", div_options)
 
 # --- POSTGRES CONVERSION STEP 1: DROPDOWN ROUTING LOGIC ---
-with st.spinner("⏳ Loading operational layout: Fetching active telemetry centers..."):
-    if selected_div == "All NEA Regional Offices":
-        center_query = "SELECT hawker_centre FROM hawker_registry ORDER BY hawker_centre;"
-        center_rows = run_query(center_query)
-    else:
-        center_query = "SELECT hawker_centre FROM hawker_registry WHERE nea_division = %s ORDER BY hawker_centre;"
-        center_rows = run_query(center_query, (selected_div,))
+if selected_div == "All NEA Regional Offices":
+    center_query = "SELECT hawker_centre FROM hawker_registry ORDER BY hawker_centre;"
+    center_rows = run_query(center_query)
+else:
+    center_query = "SELECT hawker_centre FROM hawker_registry WHERE nea_division = %s ORDER BY hawker_centre;"
+    center_rows = run_query(center_query, (selected_div,))
 
 # Convert the resulting list of data tuples seamlessly into flat text layout strings
 center_list = ["All Centres (Global View)"] + [row[0] for row in center_rows]
@@ -121,7 +120,8 @@ def load_master_telemetry(selected_center, selected_div):
     sql_query = sql_base + limit_clause
     
     # 3. Fetch raw rows using your background query runner
-    row_rows = run_query(sql_query, tuple(params) if params else None)
+    with st.spinner("⏳ Synchronization in progress: Compiling geospatial hotspot layers and calculating data frames..."):
+        row_rows = run_query(sql_query, tuple(params) if params else None)
     
     # 4. Map columns explicitly to match your exact metrics schema definitions
     cols = [
