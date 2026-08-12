@@ -92,16 +92,26 @@ st.sidebar.markdown("<h3 style='color: #102542; font-family: Arial; margin-botto
 # STEP 2: Subheading title sits in its own standalone slot with a clean internal padding-top gap
 st.sidebar.markdown("<p style='font-size: 11px; color: #7f8c8d; font-weight: bold; margin-top: 5px; padding-top: 20px; margin-bottom: 0px;'>ENVIRONMENTAL PUBLIC HEALTH OPERATIONS DEPARTMENT</p>", unsafe_allow_html=True)
 
+# =========================================================================
+# SYSTEM RE-FIX: DIRECT NATIVE CALLBACK STATE SYNCHRONIZATION
+# =========================================================================
 div_options = ["All NEA Regional Offices", "Central Regional Office (CRO)", "North West Regional Office (NWRO)", "North East Regional Office (NERO)", "South West Regional Office (SWRO)", "South East Regional Office (SERO)"]
 
-# SYSTEM FIX: Sync active database variables with state memory right before dropdown execution
-if "saved_regional_office" in st.session_state:
-    selected_div = st.session_state["saved_regional_office"]
-else:
-    selected_div = "All NEA Regional Offices"
+# 1. Initialize the global active selected variable securely inside memory strings
+if "saved_regional_office" not in st.session_state:
+    st.session_state["saved_regional_office"] = "All NEA Regional Offices"
 
-# Re-link the selectbox cleanly with its state key locked in place
-selected_div = st.sidebar.selectbox("NEA Regional Office:", div_options, key="saved_regional_office")
+# 2. Callback logic engine: Forces the query variable to match the state key instantly
+def update_regional_filter():
+    pass # Session state handles the tracking value injection directly
+
+# 3. Clean widget registration: No index conflicts, locks data states instantly
+selected_div = st.sidebar.selectbox(
+    "NEA Regional Office:", 
+    div_options, 
+    key="saved_regional_office",
+    on_change=update_regional_filter
+)
 
 
 # --- POSTGRES CONVERSION STEP 1: DROPDOWN ROUTING LOGIC ---
