@@ -67,7 +67,7 @@ st.sidebar.markdown(
     """
     <div style='margin-bottom: 0px; padding-top: 5px;'>
         <p style='color: #102542; font-family: Arial; font-size: 20px; font-weight: bold; margin: 0; padding: 0; line-height: 1.1;'>Surveillance Control</p>
-        <p style='font-size: 11px; color: #7f8c8d; font-weight: bold; padding: 0; line-height: 1.2; margin-top: 10px; margin-bottom: 0px;'>ENVIRONMENTAL PUBLIC HEALTH OPERATIONS DEPARTMENT</p>
+        <p style='font-size: 11px; color: #7f8c8d; font-weight: bold; margin: 0; padding: 0; line-height: 1.2; padding-top: 12px; padding-bottom: 0px;'>ENVIRONMENTAL PUBLIC HEALTH OPERATIONS DEPARTMENT</p>
     </div>
     """, 
     unsafe_allow_html=True
