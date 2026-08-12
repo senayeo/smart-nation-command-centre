@@ -19,24 +19,20 @@ st.set_page_config(
 st.markdown(
     """
     <style>
-    /* Target and completely remove the Fork link and GitHub icon links from guest views */
-    button[title="View source on GitHub"] {display: none !important; visibility: hidden !important;}
-    a[href*="github.com"] {display: none !important; visibility: hidden !important;}
-    
-    /* Target-lock the native Streamlit core deployment button classes and hide them */
+    /* Aggressively target-locks the entire right-side action toolbar to wipe out the GitHub and Fork items */
+    [data-testid="stAppDeployButton"] {display: none !important; visibility: hidden !important;}
     .stAppDeployButton {display: none !important; visibility: hidden !important;}
     div[data-testid="stAppDeployButton"] {display: none !important; visibility: hidden !important;}
     
-    /* Hide the parent anchor links that wrap around the Fork text and GitHub svg elements */
-    header a[href*="github.com"], header a[href*="share.streamlit.io"] {
-        display: none !important;
-        visibility: hidden !important;
-    }
+    /* Blanket restriction to wipe out all source code tracking links from header layouts */
+    button[title="View source on GitHub"] {display: none !important;}
+    a[href*="github.com"] {display: none !important;}
+    .viewerBadge_container__171uN {display: none !important;}
     
-    /* Removes the developer edit pencil shortcut from the header action bar */
+    /* Removes the developer edit pencil button shortcut from the main view */
     div[data-testid="stHeader"] button:has(svg path[d*="M12.3"]) {display: none !important;}
     
-    /* Hide the 'Made with Streamlit' branding footer link text inside the options menu */
+    /* Hides the 'Made with Streamlit' branding footer link text inside the options menu */
     footer {visibility: hidden;}
     </style>
     """,
