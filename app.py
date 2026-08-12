@@ -11,20 +11,20 @@ from assets import BASE64_IMAGE
 # KEEP ONLY THIS SINGLE CONFIGURATION CALL AT THE VERY TOP
 st.set_page_config(page_title="Smart Waste & Rodent Prevention Console", layout="wide", page_icon="sg")
 
-# INJECT ONLY THE CSS MARKDOWN STREAM RIGHT UNDERNEATH IT
+# INJECT THIS FOR THE PERFECT BALANCE: HIDES SOURCE CODE, KEEPS USEFUL SYSTEM MENU
 st.markdown(
     """
     <style>
-    /* Completely hide the Streamlit top-right GitHub deployment and action menu headers */
-    #MainMenu {visibility: hidden;}
-    footer {visibility: hidden;}
-    .viewerBadge_container__171uN {display: none !important;}
+    /* 1. Surgically hide ONLY the public source code exposure and edit links */
     button[title="View source on GitHub"] {display: none !important;}
     a[href*="github.com"] {display: none !important;}
-    ul[data-testid="stActionButtonIcon"] {display: none !important;}
-    div[data-testid="stActionButton"] {display: none !important;}
-    [data-testid="stToolbar"] {visibility: hidden; display: none !important;}
-    [data-testid="stDecoration"] {display: none !important;}
+    .viewerBadge_container__171uN {display: none !important;}
+    
+    /* 2. Hide the edit pencil icon from the action row */
+    div[data-testid="stHeader"] button:has(svg path[d*="M12.3"]) {display: none !important;}
+    
+    /* 3. Keep the generic three-dots menu but remove the 'Made with Streamlit' footer label inside it */
+    footer {visibility: hidden;}
     </style>
     """,
     unsafe_allow_html=True
@@ -68,6 +68,13 @@ st.markdown("<p style='color: #7F8C8D; font-size: 13px; margin-top: -15px; margi
 
 st.sidebar.markdown("<h3 style='color: #102542; font-family: Arial; margin-bottom: 5px;'>Surveillance Control</h3>", unsafe_allow_html=True)
 st.sidebar.markdown("<p style='font-size:11px; color:#7f8c8d; margin-top:5px; margin-bottom:2px; font-weight:bold;'>ENVIRONMENTAL PUBLIC HEALTH OPERATIONS DEPARTMENT</p>", unsafe_allow_html=True)
+
+# 🔄 INSERT HERE (LINE 72): SYNCHRONIZATION BUTTON FOR GUESTS AND EVALUATORS
+st.sidebar.write("---") # Renders a clean divider line inside the sidebar
+if st.sidebar.button("Force Synchronize & Refresh View Cache", use_container_width=True):
+    st.clear_cache() # Flushes Streamlit's old query memory blocks safely
+    st.rerun()       # Force-reloads the script loop instantly
+st.sidebar.write("---")
 
 div_options = ["All NEA Regional Offices", "Central Regional Office (CRO)", "North West Regional Office (NWRO)", "North East Regional Office (NERO)", "South West Regional Office (SWRO)", "South East Regional Office (SERO)"]
 selected_div = st.sidebar.selectbox("NEA Regional Office:", div_options)
