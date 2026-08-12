@@ -62,8 +62,16 @@ def run_query(query, params=None):
 st.markdown("<h2 style='text-align: left; color: #102542; font-family: Arial;'>Smart Waste Management with AIoT Rodent Prevention</h2>", unsafe_allow_html=True)
 st.markdown("<p style='color: #7F8C8D; font-size: 13px; margin-top: -15px; margin-bottom: 25px;'><b>Operational Prototype Simulation</b> • Joint Agency (NEA Environmental Public Health / Town Councils) Smart City Ingestion & Rodent Prevention Command Centre • Developed via GovTech/OGP Architectural Evaluation Framework</p>", unsafe_allow_html=True)
 
-st.sidebar.markdown("<h3 style='color: #102542; font-family: Arial; margin: 0px; padding: 0px;'>Surveillance Control</h3>", unsafe_allow_html=True)
-st.sidebar.markdown("<p style='font-size: 11px; color: #7f8c8d; margin: 0px; padding: 0px; transform: translateY(4px); font-weight: bold;'>ENVIRONMENTAL PUBLIC HEALTH OPERATIONS DEPARTMENT</p>", unsafe_allow_html=True)
+# UNIFIED CONTAINER FIX: Combines lines 64 and 65 to permanently stop layout clipping and fix filter spacing gaps
+st.sidebar.markdown(
+    """
+    <div style='display: flex; flex-direction: column; gap: 4px; margin-bottom: 15px;'>
+        <h3 style='color: #102542; font-family: Arial; margin: 0; padding: 0; line-height: 1.1;'>Surveillance Control</h3>
+        <p style='font-size: 11px; color: #7f8c8d; font-weight: bold; margin: 0; padding: 0; line-height: 1.2;'>ENVIRONMENTAL PUBLIC HEALTH OPERATIONS DEPARTMENT</p>
+    </div>
+    """, 
+    unsafe_allow_html=True
+)
 
 div_options = ["All NEA Regional Offices", "Central Regional Office (CRO)", "North West Regional Office (NWRO)", "North East Regional Office (NERO)", "South West Regional Office (SWRO)", "South East Regional Office (SERO)"]
 selected_div = st.sidebar.selectbox("NEA Regional Office:", div_options)
