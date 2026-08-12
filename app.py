@@ -8,77 +8,57 @@ from datetime import datetime
 import os
 from assets import BASE64_IMAGE
 
-# KEEP ONLY THIS SINGLE CONFIGURATION CALL AT THE VERY TOP
-st.set_page_config(page_title="Smart Waste & Rodent Prevention Console", layout="wide", page_icon="sg")
+# 1. FIXED PAGE CONFIGURATION: Swapped invalid "sg" text string for a bulletproof system emoji icon asset
+st.set_page_config(
+    page_title="Smart Waste & Rodent Prevention Console", 
+    layout="wide", 
+    page_icon="📊"
+)
 
-# INJECT THIS UPDATED CONFIGURATION STREAM TO WIPE THE GITHUB TOOLBAR COMPLETELY and VAPORISE THE BOTTOM RIGHT CORNER ENTIRELY
+# 2. PRISTINE PRODUCTION CSS FILTERS: Removed all useless, unexecutable bottom-right iframe target hacks
 st.markdown(
     """
     <style>
-    /* 1. Completely target-lock and vaporise the top-right GitHub Deploy/Fork action button wrapper */
+    /* Surgically hide the public source code exposure and fork buttons from all user views */
+    [data-testid="stAppDeployButton"] {display: none !important; visibility: hidden !important;}
     .stAppDeployButton {display: none !important; visibility: hidden !important;}
-    div[data-testid="stAppDeployButton"] {display: none !important; visibility: hidden !important;}
     
-    /* 2. Surgically hide the public source code exposure links from all user views */
+    /* Target and remove development tracking toolbars from guest layouts */
+    [data-testid="stToolbar"] {visibility: hidden; display: none !important;}
+    [data-testid="stDecoration"] {display: none !important;}
+    
+    /* Hide the source code exposure links */
     button[title="View source on GitHub"] {display: none !important;}
     a[href*="github.com"] {display: none !important;}
     
-    /* 3. Hide the edit pencil icon from the action row */
+    /* Hide the developer edit pencil shortcut from the main action header bar */
     div[data-testid="stHeader"] button:has(svg path[d*="M12.3"]) {display: none !important;}
     
-    /* 4. Keep the generic three-dots menu but remove the 'Made with Streamlit' footer label inside it */
+    /* Maintain the generic three-dots options menu for guests while hiding the Streamlit footer branding inside it */
     footer {visibility: hidden;}
-    
-    /* ========================================================================= */
-    /* 5. FIX: AGGRESSIVE RE-ENGINEERED TARGET SELECTION FOR THE BOTTOM RIGHT SIDE */
-    
-    /* Targets the native viewer badge and completely force-closes its rendering container */
-    [data-testid="stViewerBadge"], .viewerBadge_container__171uN, iframe[title="viewer-badge"] {
-        display: none !important; 
-        visibility: hidden !important;
-        height: 0px !important;
-        width: 0px !important;
-    }
-    
-    /* Global parent element target-lock to wipe out the status widgets and toolbar overlays completely */
-    div[class*="stStatusWidget"], [data-testid="stStatusWidget"], div[id*="stStatusWidget"] {
-        display: none !important; 
-        visibility: hidden !important;
-        height: 0% !important;
-        width: 0px !important;
-        position: fixed !important;
-    }
-    
-    /* Absolute blanket override for any residual administrative layout badges popping up at the window edge */
-    div[class*="viewerBadge"], a[class*="viewerBadge"], button[class*="viewerBadge"] {
-        display: none !important;
-        visibility: hidden !important;
-    }
     </style>
     """,
     unsafe_allow_html=True
 )
 
+# 3. RELATIONAL MIDDLEWARE DATABASE DRIVERS
 import psycopg2
 
 def run_query(query, params=None):
-    supabase_uri = st.secrets["SUPABASE_URI"]
-    # Open connection
-    conn = psycopg2.connect(supabase_uri)
+    supa_uri = st.secrets["SUPABASE_URI"]
+    conn = psycopg2.connect(supa_uri)
     cursor = conn.cursor()
     try:
         if params:
             cursor.execute(query, params)
         else:
             cursor.execute(query)
-        # Fetch data immediately before closing connection lines
         results = cursor.fetchall()
         return results
     except Exception as e:
         st.error(f"❌ Query execution failed: {str(e)}")
         return []
     finally:
-        # Guarantee memory blocks close perfectly to prevent leaking database connections
         cursor.close()
         conn.close()
 
