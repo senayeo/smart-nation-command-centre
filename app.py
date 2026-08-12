@@ -9,51 +9,25 @@ import os
 from assets import BASE64_IMAGE
 
 # KEEP ONLY THIS SINGLE CONFIGURATION CALL AT THE VERY TOP
-st.set_page_config(page_title="Smart Waste & Rodent Prevention Console", layout="wide", page_icon="sg")
+st.set_page_config(page_title="Smart Waste & Rodent Prevention Console", layout="wide", page_icon="📊")
 
 # INJECT THIS UPDATED CONFIGURATION STREAM TO WIPE THE GITHUB TOOLBAR COMPLETELY and VAPORISE THE BOTTOM RIGHT CORNER ENTIRELY
 st.markdown(
     """
     <style>
-    /* 1. Completely target-lock and vaporise the top-right GitHub Deploy/Fork action button wrapper */
+    /* Target-lock and completely hide Streamlit's new native top-right Deploy/Fork action button wrappers */
     .stAppDeployButton {display: none !important; visibility: hidden !important;}
     div[data-testid="stAppDeployButton"] {display: none !important; visibility: hidden !important;}
+    header a[href*="github.com"], header a[href*="share.streamlit.io"] {display: none !important; visibility: hidden !important;}
     
-    /* 2. Surgically hide the public source code exposure links from all user views */
+    /* Hide the old public source code exposure and edit links from all user views */
     button[title="View source on GitHub"] {display: none !important;}
     a[href*="github.com"] {display: none !important;}
-    
-    /* 3. Hide the edit pencil icon from the action row */
+    .viewerBadge_container__171uN {display: none !important;}
     div[data-testid="stHeader"] button:has(svg path[d*="M12.3"]) {display: none !important;}
     
-    /* 4. Keep the generic three-dots menu but remove the 'Made with Streamlit' footer label inside it */
+    /* Hide the 'Made with Streamlit' branding footer text inside the options menu */
     footer {visibility: hidden;}
-    
-    /* ========================================================================= */
-    /* 5. FIX: AGGRESSIVE RE-ENGINEERED TARGET SELECTION FOR THE BOTTOM RIGHT SIDE */
-    
-    /* Targets the native viewer badge and completely force-closes its rendering container */
-    [data-testid="stViewerBadge"], .viewerBadge_container__171uN, iframe[title="viewer-badge"] {
-        display: none !important; 
-        visibility: hidden !important;
-        height: 0px !important;
-        width: 0px !important;
-    }
-    
-    /* Global parent element target-lock to wipe out the status widgets and toolbar overlays completely */
-    div[class*="stStatusWidget"], [data-testid="stStatusWidget"], div[id*="stStatusWidget"] {
-        display: none !important; 
-        visibility: hidden !important;
-        height: 0% !important;
-        width: 0px !important;
-        position: fixed !important;
-    }
-    
-    /* Absolute blanket override for any residual administrative layout badges popping up at the window edge */
-    div[class*="viewerBadge"], a[class*="viewerBadge"], button[class*="viewerBadge"] {
-        display: none !important;
-        visibility: hidden !important;
-    }
     </style>
     """,
     unsafe_allow_html=True
