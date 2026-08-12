@@ -58,8 +58,16 @@ def run_query(query, params=None):
         cursor.close()
         conn.close()
 
+# Pins the rerun button straight to the top right corner
+col_title, col_rerun = st.columns([0.9, 0.1], vertical_alignment="center")
 
-st.markdown("<h2 style='text-align: left; color: #102542; font-family: Arial;'>Smart Waste Management with AIoT Rodent Prevention</h2>", unsafe_allow_html=True)
+with col_title:
+    st.markdown("<h2 style='text-align: left; color: #102542; font-family: Arial; margin: 0; padding: 0;'>Smart Waste Management with AIoT Rodent Prevention</h2>", unsafe_allow_html=True)
+
+with col_rerun:
+    if st.button("🔄 Rerun", use_container_width=True, help="Executes a safe, internal python code reload without losing selected filters"):
+        st.rerun()
+
 st.markdown("<p style='color: #7F8C8D; font-size: 13px; margin-top: -15px; margin-bottom: 25px;'><b>Operational Prototype Simulation</b> • Joint Agency (NEA Environmental Public Health / Town Councils) Smart City Ingestion & Rodent Prevention Command Centre • Developed via GovTech/OGP Architectural Evaluation Framework</p>", unsafe_allow_html=True)
 
 # STEP 1: Main Sidebar Title gets its own independent, clean layout container
