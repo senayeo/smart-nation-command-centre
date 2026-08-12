@@ -3,6 +3,8 @@ import pandas as pd
 from datetime import datetime
 import psycopg2
 
+st.set_page_config(page_title="Command Console: Operations Backend", layout="centered", page_icon="🌐")
+
 # --- THIRD-PARTY EMBEDDED INTEGRATION: TWILIO MESSAGING OPERATIONS API ---
 try:
     from twilio.rest import Client
@@ -10,20 +12,34 @@ try:
 except ImportError:
     TWILIO_AVAILABLE = False
 
-st.set_page_config(page_title="Command Console: Operations Backend", layout="centered", page_icon="🌐")
-
-st.markdown("""
+# UNIFIED CSS ENGINE: Both layout rules merged into a single execution frame
+st.markdown(
+    """
     <style>
-        /* SYSTEM FIX: Tightly condenses the centered app container column to 850px for a clean card layout */
-        .block-container {
-            max-width: 768px !important;
-        }
-        /* Sets a balanced width constraint for the data field container boxes */
-        div[data-baseweb="input"] {
-            max-width: 200px !important;
-        }
+    /* 1. Completely hide the Streamlit top-right GitHub deployment and action menu headers */
+    #MainMenu {visibility: hidden;}
+    footer {visibility: hidden;}
+    .viewerBadge_container__171uN {display: none !important;}
+    button[title="View source on GitHub"] {display: none !important;}
+    a[href*="github.com"] {display: none !important;}
+    ul[data-testid="stActionButtonIcon"] {display: none !important;}
+    div[data-testid="stActionButton"] {display: none !important;}
+    [data-testid="stToolbar"] {visibility: hidden; display: none !important;}
+    [data-testid="stDecoration"] {display: none !important;}
+    
+    /* 2. SYSTEM FIX: Tightly condenses the centered app container column to 768px for a clean card layout */
+    .block-container {
+        max-width: 768px !important;
+    }
+    
+    /* 3. Sets a balanced width constraint for the data field container boxes */
+    div[data-baseweb="input"] {
+        max-width: 200px !important;
+    }
     </style>
-""", unsafe_allow_html=True)
+    """,
+    unsafe_allow_html=True
+)
 
 # Systemic database settings table initialization
 def init_system_config_tables():
