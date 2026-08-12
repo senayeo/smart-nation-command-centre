@@ -30,12 +30,30 @@ st.markdown(
     footer {visibility: hidden;}
     
     /* ========================================================================= */
-    /* 5. NEW CRITICAL ADDITION: COMPLETELY VAPORISE THE BOTTOM-RIGHT BADGE AND TOOLBAR */
-    div[data-testid="stViewerBadge"] {display: none !important; visibility: hidden !important;}
-    .viewerBadge_container__171uN {display: none !important; visibility: hidden !important;}
-    iframe[title="viewer-badge"] {display: none !important; visibility: hidden !important;}
-    [data-testid="stStatusWidget"] {display: none !important; visibility: hidden !important;}
-    #data-testid="stStatusWidget" {display: none !important; visibility: hidden !important;}
+    /* 5. FIX: AGGRESSIVE RE-ENGINEERED TARGET SELECTION FOR THE BOTTOM RIGHT SIDE */
+    
+    /* Targets the native viewer badge and completely force-closes its rendering container */
+    [data-testid="stViewerBadge"], .viewerBadge_container__171uN, iframe[title="viewer-badge"] {
+        display: none !important; 
+        visibility: hidden !important;
+        height: 0px !important;
+        width: 0px !important;
+    }
+    
+    /* Global parent element target-lock to wipe out the status widgets and toolbar overlays completely */
+    div[class*="stStatusWidget"], [data-testid="stStatusWidget"], div[id*="stStatusWidget"] {
+        display: none !important; 
+        visibility: hidden !important;
+        height: 0% !important;
+        width: 0px !important;
+        position: fixed !important;
+    }
+    
+    /* Absolute blanket override for any residual administrative layout badges popping up at the window edge */
+    div[class*="viewerBadge"], a[class*="viewerBadge"], button[class*="viewerBadge"] {
+        display: none !important;
+        visibility: hidden !important;
+    }
     </style>
     """,
     unsafe_allow_html=True
