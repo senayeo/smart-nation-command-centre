@@ -30,6 +30,21 @@ st.markdown(
     .stSelectbox {margin-bottom: 0.4rem !important;}
     hr {margin-top: 0.5rem !important; margin-bottom: 0.5rem !important;}
     .alert-banner {padding: 7px 12px; border-radius: 4px; margin-bottom: 0px; font-family: Arial; font-size: 13px;}
+    /* Completely strips the outline borders, shadows, and backgrounds from the header Rerun button */
+    div[data-testid="stColumn"] button {
+        border: none !important;
+        background: transparent !important;
+        box-shadow: none !important;
+        color: #2c3e50 !important;
+        font-weight: bold !important;
+        font-size: 14px !important;
+        padding: 6px 12px !important;
+    }
+    div[data-testid="stColumn"] button:hover {
+        color: #102542 !important;
+        background: #f1f2f6 !important;
+        border-radius: 4px !important;
+    }
     </style>
     """,
     unsafe_allow_html=True
@@ -58,14 +73,17 @@ def run_query(query, params=None):
         cursor.close()
         conn.close()
 
+# UNIFIED HEADER NAVIGATION GRID 
 col_title, col_rerun = st.columns([0.88, 0.12], vertical_alignment="center")
 
 with col_title:
     st.markdown("<h2 style='text-align: left; color: #102542; font-family: Arial; margin: 0; padding: 0;'>Smart Waste Management with AIoT Rodent Prevention</h2>", unsafe_allow_html=True)
 
 with col_rerun:
-    if st.button("🔄 Rerun", use_container_width=True):
-        st.rerun()
+    # 🔄 TRUE GUEST RERUN TRIGGER: Looks completely borderless and matches keyboard 'R' behavior
+    if st.button("🔄 Rerun", use_container_width=True, type="secondary", help="Triggers a native script reload while preserving dropdown states"):
+        st.clear_cache() # Evicts old cached query data blocks from memory
+        st.rerun()       # Executes an immediate internal Python rerun loop
 
 st.markdown("<p style='color: #7F8C8D; font-size: 13px; margin-top: -15px; margin-bottom: 25px;'><b>Operational Prototype Simulation</b> • Joint Agency (NEA Environmental Public Health / Town Councils) Smart City Ingestion & Rodent Prevention Command Centre • Developed via GovTech/OGP Architectural Evaluation Framework</p>", unsafe_allow_html=True)
 
@@ -76,7 +94,7 @@ st.sidebar.markdown("<h3 style='color: #102542; font-family: Arial; margin-botto
 st.sidebar.markdown("<p style='font-size: 11px; color: #7f8c8d; font-weight: bold; margin-top: 5px; padding-top: 20px; margin-bottom: 0px;'>ENVIRONMENTAL PUBLIC HEALTH OPERATIONS DEPARTMENT</p>", unsafe_allow_html=True)
 
 div_options = ["All NEA Regional Offices", "Central Regional Office (CRO)", "North West Regional Office (NWRO)", "North East Regional Office (NERO)", "South West Regional Office (SWRO)", "South East Regional Office (SERO)"]
-selected_div = st.sidebar.selectbox("NEA Regional Office:", div_options)
+selected_div = st.sidebar.selectbox("NEA Regional Office:", div_options, key="saved_regional_office")
 
 # --- POSTGRES CONVERSION STEP 1: DROPDOWN ROUTING LOGIC ---
 if selected_div == "All NEA Regional Offices":
@@ -88,7 +106,7 @@ else:
 
 # Convert the resulting list of data tuples seamlessly into flat text layout strings
 center_list = ["All Centres (Global View)"] + [row[0] for row in center_rows]
-selected_center = st.sidebar.selectbox("Target Hawker Centre Location:", center_list)
+selected_center = st.sidebar.selectbox("Target Hawker Centre Location:", center_list, key="saved_hawker_centre")
 
 # --- POSTGRES CONVERSION STEP 2: CACHED TELEMETRY INGESTION ---
 def load_master_telemetry(selected_center, selected_div):
