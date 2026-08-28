@@ -154,7 +154,7 @@ with st.spinner("⏳ Operations Core Initialising: Syncing live AIoT telemetry r
             [0.0, "#FDE68A"], [0.25, "#F59E0B"], [0.5, "#EF4444"], [1.0, "#7F1D1D"]   
         ]
         fig_map = px.scatter_map(
-            map_data, lat="latitude", lon="longitude", size="Display Size",
+            map_data, latitude="latitude", longitude="longitude", size="Display Size",
             color=color_target, color_continuous_scale=custom_ylorrd,
             size_max=40, zoom=zoom_level,
             map_style="open-street-map", hover_name=hover_name_val, hover_data=hover_data_list,
