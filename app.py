@@ -102,11 +102,11 @@ with st.spinner("⏳ Operations Core Initialising: Syncing live AIoT telemetry r
                 WHERE hawker_centre IN (
                     SELECT hawker_centre 
                     FROM nea_telemetry 
-                    WHERE stall_id = 'MASTER_NODE' AND timestamp >= (SELECT MAX(timestamp) FROM nea_telemetry) - INTERVAL '15 days'
+                    WHERE stall_id = 'MASTER_NODE'
                     GROUP BY hawker_centre 
                     ORDER BY SUM(rat_detections_count) DESC 
                     LIMIT 10
-                ) AND timestamp >= (SELECT MAX(timestamp) FROM nea_telemetry) - INTERVAL '15 days'
+                )
             """
             if selected_div != 'All NEA Regional Offices':
                 sql_base += " AND nea_division = %s"
@@ -173,8 +173,16 @@ with st.spinner("⏳ Operations Core Initialising: Syncing live AIoT telemetry r
         n_view = load_map_registry(selected_div)
         
         # 2. Convert timestamp metrics safely inside the isolated scope layer
+
         if master_df is not None and not master_df.empty:
             master_df['timestamp'] = pd.to_datetime(master_df['timestamp'])
+            
+            # Identify the 15 latest unique dates present inside your static array
+            unique_dates = sorted(master_df['timestamp'].dt.date.unique(), reverse=True)
+            latest_15_days = unique_dates[:15]
+            
+            # Keeps all records matching these 15 days, ensuring new backend test data works seamlessly
+            master_df = master_df[master_df['timestamp'].dt.date.isin(latest_15_days)]
         else:
             master_df = pd.DataFrame()
             
@@ -298,12 +306,15 @@ with st.spinner("⏳ Operations Core Initialising: Syncing live AIoT telemetry r
 
     # --- EXECUTE OPTIMIZED GIS MAP RENDERER FROM MEMORY CACHE ---
     if selected_center == 'All Centres (Global View)':
-        map_data = master_df[['hawker_centre', 'latitude', 'longitude']].drop_duplicates().merge(latest_snapshots, on='hawker_centre', how='left').fillna(0)
-        map_data['Display Size'] = 16.0 + (map_data['total_rats'] * 6.0)
-        # FIXED: Removed "constituency" to match the actual available dataframe columns exactly
+        map_data = master_df[['hawker_centre', 'latitude', 'longitude']].drop_duplicates()
+        map_data['total_rats'] = master_df.groupby('hawker_centre')['rat_detections_count'].transform('sum')
+        map_data['total_lids'] = master_df.groupby('hawker_centre')['lid_breaches_count'].transform('sum')
+        map_data['Display Size'] = 16.0 + (map_data['total_rats'] * 0.1)
         fig_map = generate_gis_map(map_data, "total_rats", "hawker_centre", ["total_rats", "total_lids"], 10.6)
     else:
-        map_data = master_df[master_df['hawker_centre'] == selected_center][['hawker_centre', 'latitude', 'longitude']].drop_duplicates().merge(latest_snapshots, on='hawker_centre', how='left').fillna(0)
+        map_data = master_df[master_df['hawker_centre'] == selected_center][['hawker_centre', 'latitude', 'longitude']].drop_duplicates()
+        map_data['total_rats'] = master_df.groupby('hawker_centre')['rat_detections_count'].transform('sum')
+        map_data['total_lids'] = master_df.groupby('hawker_centre')['lid_breaches_count'].transform('sum')
         map_data['Display Size'] = 35.0
         fig_map = generate_gis_map(map_data, "total_rats", "hawker_centre", ["total_rats", "total_lids"], 14.5)
 
