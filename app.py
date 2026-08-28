@@ -157,14 +157,14 @@ with st.spinner("⏳ Operations Core Initialising: Syncing live AIoT telemetry r
             map_data, lat="latitude", lon="longitude", size="Display Size",
             color=color_target, color_continuous_scale=custom_ylorrd,
             size_max=40, zoom=zoom_level,
+            # RESTORE SYSTEM STYLE: Uses the correct tile configuration keyword
+            map_style="open-street-map", 
             hover_name=hover_name_val, hover_data=hover_data_list,
             labels={"total_rats": "AI-Verified Rodents", "total_lids": "Lid Open Flags"}
         )
-        # SYSTEM FIX: Forces layout styles to explicitly render tiles into viewport frames
+        # FIXED: Removed the broken coloraxis binding to let the map tiles load naturally
         fig_map.update_layout(
-            margin={"r":0,"t":0,"l":0,"b":0}, height=410,
-            map={"style": "carto-positron"},
-            coloraxis=dict(cmin=0, cmax=4, showscale=True)
+            margin={"r":0,"t":0,"l":0,"b":0}, height=410
         )
         return fig_map
 
