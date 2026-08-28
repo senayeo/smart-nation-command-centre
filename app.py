@@ -287,16 +287,11 @@ with st.spinner("⏳ Operations Core Initialising: Syncing live AIoT telemetry r
     supabase_uri = st.secrets["SUPABASE_URI"]
     conn_map = psycopg2.connect(supabase_uri)
     sql_map = """
-        SELECT t.hawker_centre,
-               MAX(CASE WHEN t.stall_id = 'MASTER_NODE' THEN t.rat_detections_count ELSE 0 END) AS total_rats,
-               SUM(CASE WHEN t.stall_id != 'MASTER_NODE' THEN t.lid_breaches_count ELSE 0 END) AS total_lids
-        FROM nea_telemetry t
-        INNER JOIN (
-            SELECT hawker_centre, MAX(timestamp) as max_ts 
-            FROM nea_telemetry 
-            GROUP BY hawker_centre
-        ) latest ON t.hawker_centre = latest.hawker_centre AND t.timestamp = latest.max_ts
-        GROUP BY t.hawker_centre;
+        SELECT hawker_centre,
+               SUM(CASE WHEN stall_id = 'MASTER_NODE' THEN rat_detections_count ELSE 0 END) AS total_rats,
+               SUM(CASE WHEN stall_id != 'MASTER_NODE' THEN lid_breaches_count ELSE 0 END) AS total_lids
+        FROM nea_telemetry
+        GROUP BY hawker_centre;
     """
     latest_snapshots = pd.read_sql_query(sql_map, conn_map)
     conn_map.close()
