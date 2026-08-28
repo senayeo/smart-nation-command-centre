@@ -192,15 +192,13 @@ with st.spinner("⏳ Operations Core Initialising: Syncing live AIoT telemetry r
         config_rows = run_query("SELECT key, value FROM system_config;")
         sys_configs = dict(config_rows)
         
-        snapshot_rows = run_query("""
-            SELECT t.hawker_centre,
-                   MAX(CASE WHEN t.stall_id = 'MASTER_NODE' THEN t.rat_detections_count ELSE 0 END) AS total_rats,
-                   SUM(CASE WHEN t.stall_id != 'MASTER_NODE' THEN t.lid_breaches_count ELSE 0 END) AS total_lids
-            FROM nea_telemetry t
-            WHERE t.timestamp = (SELECT MAX(timestamp) FROM nea_telemetry WHERE stall_id = 'MASTER_NODE')
-            GROUP BY t.hawker_centre;
-        """)
-        snapshots_df = pd.DataFrame(snapshot_rows, columns=['hawker_centre', 'total_rats', 'total_lids'])
+        if master_df is not None and not master_df.empty:
+            snapshots_df = master_df.groupby('hawker_centre', as_index=False).agg(
+                total_rats=('rat_detections_count', 'sum'),
+                total_lids=('lid_breaches_count', 'sum')
+            )
+        else:
+            snapshots_df = pd.DataFrame(columns=['hawker_centre', 'total_rats', 'total_lids'])
         
         # 4. Build combined runtime dataframe via clean vector merge, fallback to placeholders if telemetry is empty
         if not master_df.empty and not n_view.empty:
