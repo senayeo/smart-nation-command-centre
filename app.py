@@ -157,13 +157,13 @@ with st.spinner("⏳ Operations Core Initialising: Syncing live AIoT telemetry r
             map_data, lat="latitude", lon="longitude", size="Display Size",
             color=color_target, color_continuous_scale=custom_ylorrd,
             size_max=40, zoom=zoom_level,
-            # RESTORE SYSTEM TILES: Returns to the correct native style layout configuration
-            map_style="carto-positron", 
             hover_name=hover_name_val, hover_data=hover_data_list,
             labels={"total_rats": "AI-Verified Rodents", "total_lids": "Lid Open Flags"}
         )
+        # SYSTEM FIX: Forces layout styles to explicitly render tiles into viewport frames
         fig_map.update_layout(
             margin={"r":0,"t":0,"l":0,"b":0}, height=410,
+            map={"style": "carto-positron"},
             coloraxis=dict(cmin=0, cmax=4, showscale=True)
         )
         return fig_map
@@ -306,32 +306,21 @@ with st.spinner("⏳ Operations Core Initialising: Syncing live AIoT telemetry r
     latest_snapshots = pd.read_sql_query(sql_map, conn_map)
     conn_map.close()
 
-    # --- EXECUTE NATIVE STREAMLIT GIS MAP RENDERER ---
+    # --- EXECUTE OPTIMIZED GIS MAP RENDERER FROM MEMORY CACHE ---
     if selected_center == 'All Centres (Global View)':
         map_data = master_df.groupby(['hawker_centre', 'latitude', 'longitude'], as_index=False).agg(
             total_rats=('rat_detections_count', 'sum'),
             total_lids=('lid_breaches_count', 'sum')
         )
+        map_data['Display Size'] = 16.0 + (map_data['total_rats'] * 0.1)
+        fig_map = generate_gis_map(map_data, "total_rats", "hawker_centre", ["total_rats", "total_lids"], 10.6)
     else:
         map_data = master_df[master_df['hawker_centre'] == selected_center].groupby(['hawker_centre', 'latitude', 'longitude'], as_index=False).agg(
             total_rats=('rat_detections_count', 'sum'),
             total_lids=('lid_breaches_count', 'sum')
         )
-
-    if not map_data.empty:
-        # Scale marker circles directly based on your verified rodent metrics count values
-        map_data['size'] = 10 + (map_data['total_rats'] * 5)
-        
-        # Streamlit's native, indestructible map layout component
-        st.map(
-            data=map_data,
-            latitude='latitude',
-            longitude='longitude',
-            size='size',
-            color='#EF4444'  # Translucent operational warning red hotspots
-        )
-    else:
-        st.warning("⚠️ No coordinate telemetry entries found matching current filter selections.")
+        map_data['Display Size'] = 35.0
+        fig_map = generate_gis_map(map_data, "total_rats", "hawker_centre", ["total_rats", "total_lids"], 14.5)
 
     st.plotly_chart(fig_map, width="stretch")
     st.markdown("<br><hr>", unsafe_allow_html=True)
