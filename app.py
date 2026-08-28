@@ -292,17 +292,13 @@ with st.spinner("⏳ Operations Core Initialising: Syncing live AIoT telemetry r
     st.markdown("<h4 style='color: #102542; font-family: Arial; margin-bottom: 10px;'>📍 Geospatial Information System (GIS) Hotspot Map</h4>", unsafe_allow_html=True)
 
     # --- POSTGRES CONVERSION: MAP LAYER SNAPSHOTS ---
+    # --- POSTGRES CONVERSION: MAP LAYER SNAPSHOTS ---
     supabase_uri = st.secrets["SUPABASE_URI"]
     conn_map = psycopg2.connect(supabase_uri)
-    sql_map = """
-        SELECT hawker_centre,
-               SUM(CASE WHEN stall_id = 'MASTER_NODE' THEN rat_detections_count ELSE 0 END) AS total_rats,
-               SUM(CASE WHEN stall_id != 'MASTER_NODE' THEN lid_breaches_count ELSE 0 END) AS total_lids
-        FROM nea_telemetry
-        GROUP BY hawker_centre;
-    """
-    latest_snapshots = pd.read_sql_query(sql_map, conn_map)
+    
+    # We close the connection safely as the memory metrics are already prepared by your initialization function
     conn_map.close()
+
 
     # --- EXECUTE OPTIMIZED GIS MAP RENDERER FROM MEMORY CACHE ---
     if selected_center == 'All Centres (Global View)':
