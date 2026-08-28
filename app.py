@@ -306,21 +306,32 @@ with st.spinner("⏳ Operations Core Initialising: Syncing live AIoT telemetry r
     latest_snapshots = pd.read_sql_query(sql_map, conn_map)
     conn_map.close()
 
-    # --- EXECUTE OPTIMIZED GIS MAP RENDERER FROM MEMORY CACHE ---
+    # --- EXECUTE NATIVE STREAMLIT GIS MAP RENDERER ---
     if selected_center == 'All Centres (Global View)':
         map_data = master_df.groupby(['hawker_centre', 'latitude', 'longitude'], as_index=False).agg(
             total_rats=('rat_detections_count', 'sum'),
             total_lids=('lid_breaches_count', 'sum')
         )
-        map_data['Display Size'] = 16.0 + (map_data['total_rats'] * 0.1)
-        fig_map = generate_gis_map(map_data, "total_rats", "hawker_centre", ["total_rats", "total_lids"], 10.6)
     else:
         map_data = master_df[master_df['hawker_centre'] == selected_center].groupby(['hawker_centre', 'latitude', 'longitude'], as_index=False).agg(
             total_rats=('rat_detections_count', 'sum'),
             total_lids=('lid_breaches_count', 'sum')
         )
-        map_data['Display Size'] = 35.0
-        fig_map = generate_gis_map(map_data, "total_rats", "hawker_centre", ["total_rats", "total_lids"], 14.5)
+
+    if not map_data.empty:
+        # Scale marker circles directly based on your verified rodent metrics count values
+        map_data['size'] = 10 + (map_data['total_rats'] * 5)
+        
+        # Streamlit's native, indestructible map layout component
+        st.map(
+            data=map_data,
+            latitude='latitude',
+            longitude='longitude',
+            size='size',
+            color='#EF4444'  # Translucent operational warning red hotspots
+        )
+    else:
+        st.warning("⚠️ No coordinate telemetry entries found matching current filter selections.")
 
     st.plotly_chart(fig_map, width="stretch")
     st.markdown("<br><hr>", unsafe_allow_html=True)
