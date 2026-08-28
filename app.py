@@ -312,14 +312,16 @@ with st.spinner("⏳ Operations Core Initialising: Syncing live AIoT telemetry r
             total_rats=('rat_detections_count', 'sum'),
             total_lids=('lid_breaches_count', 'sum')
         )
-        map_data['Display Size'] = 16.0 + (map_data['total_rats'] * 0.1)
+        # FIXED: Logarithmic scaling ensures massive counts stay as small, readable map dots
+        import numpy as np
+        map_data['Display Size'] = 12.0 + (np.log1p(map_data['total_rats']) * 3.0)
         fig_map = generate_gis_map(map_data, "total_rats", "hawker_centre", ["total_rats", "total_lids"], 10.6)
     else:
         map_data = master_df[master_df['hawker_centre'] == selected_center].groupby(['hawker_centre', 'latitude', 'longitude'], as_index=False).agg(
             total_rats=('rat_detections_count', 'sum'),
             total_lids=('lid_breaches_count', 'sum')
         )
-        map_data['Display Size'] = 35.0
+        map_data['Display Size'] = 25.0
         fig_map = generate_gis_map(map_data, "total_rats", "hawker_centre", ["total_rats", "total_lids"], 14.5)
 
     st.plotly_chart(fig_map, width="stretch")
