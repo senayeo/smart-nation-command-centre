@@ -298,16 +298,15 @@ with st.spinner("⏳ Operations Core Initialising: Syncing live AIoT telemetry r
 
     # --- EXECUTE OPTIMIZED GIS MAP RENDERER FROM MEMORY CACHE ---
     if selected_center == 'All Centres (Global View)':
-        map_data = df_map_view.merge(latest_snapshots, on='hawker_centre', how='left').fillna(0)
+        map_data = master_df[['hawker_centre', 'latitude', 'longitude']].drop_duplicates().merge(latest_snapshots, on='hawker_centre', how='left').fillna(0)
         map_data['Display Size'] = 16.0 + (map_data['total_rats'] * 6.0)
         fig_map = generate_gis_map(map_data, "total_rats", "hawker_centre", ["total_rats", "total_lids", "constituency"], 10.6)
     else:
-        map_data = df_map_view[df_map_view['hawker_centre'] == selected_center].merge(latest_snapshots, on='hawker_centre', how='left').fillna(0)
+        map_data = master_df[master_df['hawker_centre'] == selected_center][['hawker_centre', 'latitude', 'longitude']].drop_duplicates().merge(latest_snapshots, on='hawker_centre', how='left').fillna(0)
         map_data['Display Size'] = 35.0
         fig_map = generate_gis_map(map_data, "total_rats", "hawker_centre", ["total_rats", "total_lids"], 14.5)
 
     st.plotly_chart(fig_map, width="stretch")
-
     st.markdown("<br><hr>", unsafe_allow_html=True)
 
     # --- UNIFIED CONFIGURATION INTERFACE FOR SUB-GRIDS ---
