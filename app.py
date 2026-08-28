@@ -154,7 +154,7 @@ with st.spinner("⏳ Operations Core Initialising: Syncing live AIoT telemetry r
             [0.0, "#FDE68A"], [0.25, "#F59E0B"], [0.5, "#EF4444"], [1.0, "#7F1D1D"]   
         ]
         fig_map = px.scatter_map(
-            map_data, latitude="latitude", longitude="longitude", size="Display Size",
+            map_data, lat="latitude", lon="longitude", size="Display Size",
             color=color_target, color_continuous_scale=custom_ylorrd,
             size_max=40, zoom=zoom_level,
             map_style="open-street-map", hover_name=hover_name_val, hover_data=hover_data_list,
@@ -306,15 +306,18 @@ with st.spinner("⏳ Operations Core Initialising: Syncing live AIoT telemetry r
 
     # --- EXECUTE OPTIMIZED GIS MAP RENDERER FROM MEMORY CACHE ---
     if selected_center == 'All Centres (Global View)':
-        map_data = master_df[['hawker_centre', 'latitude', 'longitude']].drop_duplicates()
-        map_data['total_rats'] = master_df.groupby('hawker_centre')['rat_detections_count'].transform('sum')
-        map_data['total_lids'] = master_df.groupby('hawker_centre')['lid_breaches_count'].transform('sum')
+        # Groups and aggregates data cleanly to preserve all required metric tracking columns
+        map_data = master_df.groupby(['hawker_centre', 'latitude', 'longitude'], as_index=False).agg(
+            total_rats=('rat_detections_count', 'sum'),
+            total_lids=('lid_breaches_count', 'sum')
+        )
         map_data['Display Size'] = 16.0 + (map_data['total_rats'] * 0.1)
         fig_map = generate_gis_map(map_data, "total_rats", "hawker_centre", ["total_rats", "total_lids"], 10.6)
     else:
-        map_data = master_df[master_df['hawker_centre'] == selected_center][['hawker_centre', 'latitude', 'longitude']].drop_duplicates()
-        map_data['total_rats'] = master_df.groupby('hawker_centre')['rat_detections_count'].transform('sum')
-        map_data['total_lids'] = master_df.groupby('hawker_centre')['lid_breaches_count'].transform('sum')
+        map_data = master_df[master_df['hawker_centre'] == selected_center].groupby(['hawker_centre', 'latitude', 'longitude'], as_index=False).agg(
+            total_rats=('rat_detections_count', 'sum'),
+            total_lids=('lid_breaches_count', 'sum')
+        )
         map_data['Display Size'] = 35.0
         fig_map = generate_gis_map(map_data, "total_rats", "hawker_centre", ["total_rats", "total_lids"], 14.5)
 
