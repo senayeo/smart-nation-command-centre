@@ -157,7 +157,7 @@ with st.spinner("⏳ Operations Core Initialising: Syncing live AIoT telemetry r
             map_data, lat="latitude", lon="longitude", size="Display Size",
             color=color_target, color_continuous_scale=custom_ylorrd,
             size_max=40, zoom=zoom_level,
-            map_style="carto-positron", hover_name=hover_name_val, hover_data=hover_data_list,
+            map_style="open-street-map", hover_name=hover_name_val, hover_data=hover_data_list,
             labels={"total_rats": "AI-Verified Rodents", "total_lids": "Lid Open Flags"}
         )
         fig_map.update_layout(
