@@ -157,7 +157,9 @@ with st.spinner("⏳ Operations Core Initialising: Syncing live AIoT telemetry r
             map_data, lat="latitude", lon="longitude", size="Display Size",
             color=color_target, color_continuous_scale=custom_ylorrd,
             size_max=40, zoom=zoom_level,
-            map_style="open-street-map", hover_name=hover_name_val, hover_data=hover_data_list,
+            # RESTORE SYSTEM TILES: Returns to the correct native style layout configuration
+            map_style="carto-positron", 
+            hover_name=hover_name_val, hover_data=hover_data_list,
             labels={"total_rats": "AI-Verified Rodents", "total_lids": "Lid Open Flags"}
         )
         fig_map.update_layout(
@@ -306,7 +308,6 @@ with st.spinner("⏳ Operations Core Initialising: Syncing live AIoT telemetry r
 
     # --- EXECUTE OPTIMIZED GIS MAP RENDERER FROM MEMORY CACHE ---
     if selected_center == 'All Centres (Global View)':
-        # Groups and aggregates data cleanly to preserve all required metric tracking columns
         map_data = master_df.groupby(['hawker_centre', 'latitude', 'longitude'], as_index=False).agg(
             total_rats=('rat_detections_count', 'sum'),
             total_lids=('lid_breaches_count', 'sum')
