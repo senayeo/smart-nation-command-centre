@@ -97,16 +97,16 @@ with st.spinner("⏳ Operations Core Initialising: Syncing live AIoT telemetry r
 
         # 2. Construct clean, index-optimized filtering constraints
         if selected_center == 'All Centres (Global View)':
-            # SYSTEM FIX: Dynamically isolates the top 10 highest risk facilities via a subquery to support live simulation pushes
+            # SYSTEM FIX: Isolates top 10 highest risk facilities using the latest available static dates inside the DB
             sql_base += """ 
                 WHERE hawker_centre IN (
                     SELECT hawker_centre 
                     FROM nea_telemetry 
-                    WHERE stall_id = 'MASTER_NODE' AND timestamp >= NOW() - INTERVAL '15 days'
+                    WHERE stall_id = 'MASTER_NODE' AND timestamp >= (SELECT MAX(timestamp) FROM nea_telemetry) - INTERVAL '15 days'
                     GROUP BY hawker_centre 
                     ORDER BY SUM(rat_detections_count) DESC 
                     LIMIT 10
-                ) AND timestamp >= NOW() - INTERVAL '15 days'
+                ) AND timestamp >= (SELECT MAX(timestamp) FROM nea_telemetry) - INTERVAL '15 days'
             """
             if selected_div != 'All NEA Regional Offices':
                 sql_base += " AND nea_division = %s"
