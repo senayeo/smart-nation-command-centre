@@ -1,0 +1,6 @@
+[browser]
+# SYSTEM FIX: Fully disables cross-domain tracking payloads to stop the fivetran preflight network lag completely
+gatherUsageStats = false
+
+[client]
+sidebarState = "expanded"
