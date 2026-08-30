@@ -14,18 +14,29 @@ st.set_page_config(page_title="Smart Waste & Rodent Prevention Console", layout=
 st.markdown(
     """
     <style>
-    /* 1. COLLAPSE THE TOP HEADER SPACE AND MASK UTILITY GRAPHICS PERMANENTLY */
+    /* 1. COLLAPSE THE TOP HEADER SPACE SO YOUR TITLE SHIFTS ALL THE WAY BACK UP */
     [data-testid="stHeader"] {
         background-color: transparent !important;
         height: 0px !important;
         min-height: 0px !important;
     }
+
+    /* 2. COMPLETELY VAPORIZE THE GITHUB ICONS AND DEPLOY GRAPHICS */
     [data-testid="stHeader"] button, 
     [data-testid="stHeader"] a, 
-    .stAppDeployButton,
-    [data-testid="stSidebarCollapseButton"] {
+    .stAppDeployButton {
         display: none !important;
         visibility: hidden !important;
+    }
+
+    /* 3. FIX THE ARROW UP: Anchors the button to the viewport screen so it NEVER disappears when the menu collapses */
+    [data-testid="stSidebarCollapseButton"] {
+        display: block !important;
+        visibility: visible !important;
+        position: fixed !important;   /* FIXED: Locks the button to the monitor glass, independent of sliding panels */
+        top: 12px !important;         /* Stuck at the topmost row of your window frame */
+        left: 16px !important;        /* Anchored safely on the outer left edge */
+        z-index: 999999 !important;
     }
 
     /* Layout block container margins and column width constraints */
