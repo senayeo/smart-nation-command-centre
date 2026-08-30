@@ -303,11 +303,11 @@ with st.spinner("⏳ Operations Core Initialising: Syncing live AIoT telemetry r
     # We close the connection safely as the memory metrics are already prepared by your initialization function
     conn_map.close()
 
-    # --- EXECUTE LOCK-STEP RISK RANGES GIS MAP RENDERER ---
+    # --- EXECUTE INDESTRUCTIBLE GIS MAP RENDERER FROM LATEST SNAPSHOT ---
     if selected_center == 'All Centres (Global View)':
         map_data = df_map_view.merge(latest_snapshots, on='hawker_centre', how='left').fillna(0)
         
-        # 1. FIXED: Keep your exact approved 4-tier pixel layout sizes
+        # 1. FIXED: Restored your exact, approved 4-tier pixel layout sizes
         def assign_snapshot_size(row):
             count = int(row['total_rats'])
             if count == 0:
@@ -319,30 +319,28 @@ with st.spinner("⏳ Operations Core Initialising: Syncing live AIoT telemetry r
             else:
                 return 20.0  # Core outbreak size
                 
-        # 2. FIXED: Map explicit, highly translucent RGBA color fields straight to the data frame
-        def assign_snapshot_color(row):
-            count = int(row['total_rats'])
-            if count == 0:
-                return "rgba(254, 240, 138, 0.35)"  # RESTORED: Beautiful, highly translucent light yellow
-            elif count == 1:
-                return "rgba(245, 158, 11, 0.75)"   # Starting outbreak: Alert amber
-            elif count <= 5:
-                return "rgba(239, 68, 68, 0.85)"    # Near outbreak: Warning red
-            else:
-                return "rgba(127, 29, 29, 0.95)"     # Core outbreak: Dark priority red
-                
         map_data['Display Size'] = map_data.apply(assign_snapshot_size, axis=1)
-        map_data['Risk Color'] = map_data.apply(assign_snapshot_color, axis=1)
         
-        # 3. FIXED: Using identity map forces Plotly to read the translucent RGBA strings exactly
+        # 2. FIXED: Clear high-contrast color array to restore the legend bar completely
+        custom_ylorrd = [
+            [0.0, "#FEF08A"],  # RESTORED: Stable light pastel yellow for pristine centres
+            [0.2, "#F59E0B"],  # Starting outbreak: Alert amber
+            [0.5, "#EF4444"],  # Near outbreak: Warning red
+            [1.0, "#7F1D1D"]   # Core outbreak: Dark priority red
+        ]
+        
+        # 3. RESTORED: Using continuous color mapping to bring back your hotspot legend bar instantly
         fig_map = px.scatter_map(
             map_data, lat="latitude", lon="longitude", size="Display Size",
-            color="Risk Color", color_discrete_map="identity",
+            color="total_rats", color_continuous_scale=custom_ylorrd,
             size_max=38, zoom=10.6, map_style="open-street-map", 
             hover_name="hawker_centre", hover_data=["total_rats", "total_lids", "constituency"],
             labels={"total_rats": "AI-Verified Rodents", "total_lids": "Lid Open Flags"}
         )
-        fig_map.update_layout(margin={"r":0,"t":0,"l":0,"b":0}, height=410, showlegend=False)
+        
+        # FIXED OVERRIDE: Applies a balanced opacity layer so the yellow circles never bleach out on zoom
+        fig_map.update_traces(marker=dict(opacity=0.65))
+        fig_map.update_layout(margin={"r":0,"t":0,"l":0,"b":0}, height=410)
         
     else:
         map_data = df_map_view[df_map_view['hawker_centre'] == selected_center].merge(latest_snapshots, on='hawker_centre', how='left').fillna(0)
