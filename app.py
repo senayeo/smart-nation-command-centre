@@ -11,17 +11,19 @@ from assets import BASE64_IMAGE
 # KEEP ONLY THIS SINGLE CONFIGURATION CALL AT THE VERY TOP
 st.set_page_config(page_title="Smart Waste & Rodent Prevention Console", layout="wide", page_icon="📊")
 
+# INJECT THIS UPDATED CONFIGURATION STREAM TO WIPE THE GITHUB TOOLBAR COMPLETELY and VAPORISE THE BOTTOM RIGHT CORNER ENTIRELY
 st.markdown(
     """
     <style>
-    /* KEEP STREAMLIT HIDDEN: Vapourises the top-right GitHub icon and deploy buttons permanently */
-    [data-testid="stHeader"] button, 
-    [data-testid="stHeader"] a,
-    .stAppDeployButton {
-        display: none !important;
-        visibility: hidden !important;
-    }
-
+    /* Absolute target-lock to delete the entire upper action toolbar block from the DOM tree */
+    [data-testid="stHeader"] {display: none !important; visibility: hidden !important; height: 0px !important;}
+    header {display: none !important; visibility: hidden !important; height: 0px !important;}
+    .stAppDeployButton {display: none !important; visibility: hidden !important;}
+    
+    /* Global fallback to trap any stray infrastructure code buttons pushing through */
+    button[title="View source on GitHub"] {display: none !important;}
+    a[href*="github.com"] {display: none !important;}
+    
     /* Layout block container margins and column width constraints */
     .block-container {padding-top: 2.0rem !important; padding-bottom: 1rem !important;}
     h2 {margin-bottom: 0.5rem !important;}
@@ -332,7 +334,6 @@ with st.spinner("⏳ Operations Core Initialising: Syncing live AIoT telemetry r
             map_data, lat="latitude", lon="longitude", size="Display Size",
             color="total_rats", color_continuous_scale=custom_ylorrd,
             size_max=38, zoom=10.6, map_style="open-street-map", 
-            center=dict(lat=1.365, lon=103.8198), # FIXED: Shifts focal viewpoint upward
             hover_name="hawker_centre", hover_data=["total_rats", "total_lids", "constituency"],
             labels={"total_rats": "AI-Verified Rodents", "total_lids": "Lid Open Flags"}
         )
