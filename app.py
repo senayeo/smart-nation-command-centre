@@ -303,7 +303,7 @@ with st.spinner("⏳ Operations Core Initialising: Syncing live AIoT telemetry r
     # We close the connection safely as the memory metrics are already prepared by your initialization function
     conn_map.close()
 
-    # --- EXECUTE LOCK-STEP RISK RANGES GIS MAP RENDERER ---
+    # --- EXECUTE INDESTRUCTIBLE GIS MAP RENDERER FROM LATEST SNAPSHOT ---
     if selected_center == 'All Centres (Global View)':
         map_data = df_map_view.merge(latest_snapshots, on='hawker_centre', how='left').fillna(0)
         
@@ -319,30 +319,28 @@ with st.spinner("⏳ Operations Core Initialising: Syncing live AIoT telemetry r
             else:
                 return 20.0  # CORE OUTBREAK: Large priority hazard circle
                 
-        # 2. FIXED: Injects your exact high-contrast translucent warning colors explicitly
-        def assign_snapshot_color(row):
-            count = int(row['total_rats'])
-            if count <= 1:
-                return "rgba(254, 240, 138, 0.45)"  # RESTORED: Light, highly translucent yellow color
-            elif count == 2:
-                return "rgba(245, 158, 11, 0.85)"   # STARTING OUTBREAK: Translucent alert amber
-            elif count <= 5:
-                return "rgba(239, 68, 68, 0.90)"    # NEAR OUTBREAK: Deep translucent warning red
-            else:
-                return "rgba(127, 29, 29, 0.95)"     # CORE OUTBREAK: High-contrast dark priority red
-                
         map_data['Display Size'] = map_data.apply(assign_snapshot_size, axis=1)
-        map_data['Map Color'] = map_data.apply(assign_snapshot_color, axis=1)
         
-        # 3. FIXED: Point the map to use your explicit 'Map Color' column instead of the continuous scale
+        # 2. FIXED: High-contrast translucent color list mapping cleanly to your values
+        # Index 0 represents pristine centres -> set to your exact light yellow hex color code
+        custom_ylorrd = [
+            [0.0, "#FEF08A"],  # RESTORED: Light translucent yellow for 0/1 rodents
+            [0.2, "#F59E0B"],  # STARTING OUTBREAK: Alert amber
+            [0.5, "#EF4444"],  # NEAR OUTBREAK: Deep warning red
+            [1.0, "#7F1D1D"]   # CORE OUTBREAK: High-contrast dark priority red
+        ]
+        
+        # 3. RESTORED: Pure native Plotly configuration to bring the map of Singapore back instantly
         fig_map = px.scatter_map(
             map_data, lat="latitude", lon="longitude", size="Display Size",
-            color="Map Color", color_discrete_map="identity",
+            color="total_rats", color_continuous_scale=custom_ylorrd,
             size_max=20, zoom=10.6, map_style="open-street-map", 
             hover_name="hawker_centre", hover_data=["total_rats", "total_lids", "constituency"],
             labels={"total_rats": "AI-Verified Rodents", "total_lids": "Lid Open Flags"}
         )
-        fig_map.update_layout(margin={"r":0,"t":0,"l":0,"b":0}, height=410, showlegend=False)
+        # Set opacity directly inside the traces layer to force your light translucent yellow style cleanly
+        fig_map.update_traces(marker=dict(opacity=0.55))
+        fig_map.update_layout(margin={"r":0,"t":0,"l":0,"b":0}, height=410)
         
     else:
         map_data = df_map_view[df_map_view['hawker_centre'] == selected_center].merge(latest_snapshots, on='hawker_centre', how='left').fillna(0)
