@@ -15,40 +15,12 @@ st.set_page_config(page_title="Smart Waste & Rodent Prevention Console", layout=
 st.markdown(
     """
     <style>
-    /* 1. MASK ONLY THE DEPLOY AND LINK CONTENT GRAPHICS INSIDE THE HEADER */
-    [data-testid="stHeader"] button, 
-    [data-testid="stHeader"] a, 
-    .stAppDeployButton {
-        display: none !important;
-        visibility: hidden !important;
-    }
-
-    /* 2. REPOSITION THE TRUE ARROW BUTTON CLEANLY ON THE MAIN TITLE ROW OUTSIDE OF THE SIDEBAR */
-    div[data-testid="stSidebarCollapseButton"] {
-        display: block !important;
-        visibility: visible !important;
-        position: fixed !important;
-        top: 28px !important;  /* Aligns it perfectly in line with the text height of your main title row */
-        left: 20px !important;
-        z-index: 999999 !important;
-    }
-    
-    /* Force the internal graphic nodes to inherit the visible state safely */
-    div[data-testid="stSidebarCollapseButton"] button {
-        background-color: transparent !important;
-        border: none !important;
-    }
-
-    /* Layout block container margins and column width constraints */
-    .block-container {padding-top: 2.0rem !important; padding-bottom: 1rem !important;}
-    h2 {margin-bottom: 0.5rem !important;}
-    .stSelectbox {margin-bottom: 0.4rem !important;}
-    hr {margin-top: 0.5rem !important; margin-bottom: 0.5rem !important;}
-    .alert-banner {padding: 7px 12px; border-radius: 4px; margin-bottom: 0px; font-family: Arial; font-size: 13px;}
+    /* Cleared styles to unblock the sidebar grid */
     </style>
     """,
     unsafe_allow_html=True
 )
+
 
 import psycopg2
 
