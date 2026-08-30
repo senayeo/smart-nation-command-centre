@@ -9,29 +9,17 @@ import os
 from assets import BASE64_IMAGE
 
 # KEEP ONLY THIS SINGLE CONFIGURATION CALL AT THE VERY TOP
-st.set_page_config(page_title="Smart Waste & Rodent Prevention Console", layout="wide", page_icon="📊", initial_sidebar_state="expanded")
+st.set_page_config(page_title="Smart Waste & Rodent Prevention Console", layout="centered", page_icon="📊", initial_sidebar_state="expanded")
 
 # INJECT THIS UPDATED CONFIGURATION STREAM TO WIPE THE GITHUB TOOLBAR COMPLETELY and VAPORISE THE BOTTOM RIGHT CORNER ENTIRELY
 # RESTORE NATIVE CONTAINER: Safely clears the layout blocks to force your left menu back instantly
 st.markdown(
     """
     <style>
-    /* 1. COMPLETELY MASK THE GITHUB TOOLBAR WITHOUT SLICING THE STATUS CONTAINER SPACE */
-    [data-testid="stHeader"] button, 
-    [data-testid="stHeader"] a, 
+    /* COMPLETELY PURGE ALL EXPERIMENTAL ARROW AND HEADER OVERRIDES */
     .stAppDeployButton {
         display: none !important;
         visibility: hidden !important;
-    }
-
-    /* 2. ANCHOR THE TOGGLE ARROW NATIVELY ON THE MAIN TITLE ROW OUTSIDE OF THE SIDEBAR BOX */
-    div[data-testid="collapsedControl"] {
-        display: block !important;
-        visibility: visible !important;
-        position: fixed !important;
-        top: 24px !important;  /* Positions it perfectly in line with your main title text row */
-        left: 20px !important;
-        z-index: 999999 !important;
     }
 
     /* Layout block container margins and column width constraints */
