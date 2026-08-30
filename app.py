@@ -9,7 +9,7 @@ import os
 from assets import BASE64_IMAGE
 
 # KEEP ONLY THIS SINGLE CONFIGURATION CALL AT THE VERY TOP
-st.set_page_config(page_title="Smart Waste & Rodent Prevention Console", layout="wide", page_icon="📊")
+st.set_page_config(page_title="Smart Waste & Rodent Prevention Console", layout="wide", page_icon="📊", initial_sidebar_state="expanded")
 
 # INJECT THIS UPDATED CONFIGURATION STREAM TO WIPE THE GITHUB TOOLBAR COMPLETELY and VAPORISE THE BOTTOM RIGHT CORNER ENTIRELY
 st.markdown(
