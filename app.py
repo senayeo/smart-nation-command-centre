@@ -299,15 +299,25 @@ with st.spinner("⏳ Operations Core Initialising: Syncing live AIoT telemetry r
     # We close the connection safely as the memory metrics are already prepared by your initialization function
     conn_map.close()
 
-
     # --- EXECUTE OPTIMIZED GIS MAP RENDERER FROM MEMORY CACHE ---
     if selected_center == 'All Centres (Global View)':
-        # RESTORED: Completely returns to your original, clean, left-merge framework
         map_data = df_map_view.merge(latest_snapshots, on='hawker_centre', how='left').fillna(0)
-        map_data['Display Size'] = 16.0 + (map_data['total_rats'] * 0.1)
+        
+        # FIXED: Explicitly assigns 3 distinct risk range scales matching your seeding logic
+        def calculate_outbreak_size(row):
+            rats = row['total_rats']
+            if rats == 0:
+                return 15.0  # Safe Baseline: Perfect, clear resting visible circle size
+            elif rats <= 150:
+                return 22.0  # Range 1 (STARTING_OUTBREAK): Small alert indicator circle
+            elif rats <= 1000:
+                return 30.0  # Range 2 (NEAR_OUTBREAK): Medium warning circle
+            else:
+                return 42.0  # Range 3 (CORE_OUTBREAK): Large high-risk priority circle
+                
+        map_data['Display Size'] = map_data.apply(calculate_outbreak_size, axis=1)
         fig_map = generate_gis_map(map_data, "total_rats", "hawker_centre", ["total_rats", "total_lids", "constituency"], 10.6)
     else:
-        # RESTORED: Completely returns to your original single center focus framework
         map_data = df_map_view[df_map_view['hawker_centre'] == selected_center].merge(latest_snapshots, on='hawker_centre', how='left').fillna(0)
         map_data['Display Size'] = 35.0
         fig_map = generate_gis_map(map_data, "total_rats", "hawker_centre", ["total_rats", "total_lids"], 14.5)
