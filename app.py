@@ -16,7 +16,13 @@ st.markdown(
     """
     <style>
     /* Absolute target-lock to delete the entire upper action toolbar block from the DOM tree */
-    [data-testid="stHeader"] {display: none !important; visibility: hidden !important; height: 0px !important;}
+    /* KEEP STREAMLIT HIDDEN: Vapourises the top-right GitHub icon and deploy buttons permanently */
+    [data-testid="stHeader"] button, [data-testid="stHeader"] a {display: none !important;}
+    [data-testid="stHeader"] {background: transparent !important;}
+    
+    /* RESTORE THE ARROW ONLY: Forces the left sidebar toggle button to remain active and fully visible */
+    div[data-testid="collapsedControl"] {display: block !important; visibility: visible !important; position: fixed !important; top: 12px !important; left: 16px !important; z-index: 999999 !important;}
+
     header {display: none !important; visibility: hidden !important; height: 0px !important;}
     .stAppDeployButton {display: none !important; visibility: hidden !important;}
     
