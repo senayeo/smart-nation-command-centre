@@ -11,71 +11,16 @@ from assets import BASE64_IMAGE
 # KEEP ONLY THIS SINGLE CONFIGURATION CALL AT THE VERY TOP
 st.set_page_config(page_title="Smart Waste & Rodent Prevention Console", layout="wide", page_icon="📊", initial_sidebar_state="expanded")
 
+# INJECT THIS UPDATED CONFIGURATION STREAM TO WIPE THE GITHUB TOOLBAR COMPLETELY and VAPORISE THE BOTTOM RIGHT CORNER ENTIRELY
 st.markdown(
     """
     <style>
-    /* 1. COLLAPSE THE TOP HEADER SPACE SO YOUR TITLE SHIFTS ALL THE WAY BACK UP */
-    [data-testid="stHeader"] {
-        background-color: transparent !important;
-        height: 0px !important;
-        min-height: 0px !important;
-    }
-
-    /* 2. COMPLETELY VAPORIZE THE GITHUB ICONS AND DEPLOY GRAPHICS */
-    [data-testid="stHeader"] button, 
-    [data-testid="stHeader"] a, 
-    .stAppDeployButton {
-        display: none !important;
-        visibility: hidden !important;
-    }
-
-    /* Layout block container margins and column width constraints */
-    .block-container {padding-top: 1.0rem !important; padding-bottom: 1rem !important;}
-    h2 {margin-bottom: 0.5rem !important;}
-    .stSelectbox {margin-bottom: 0.4rem !important;}
-    hr {margin-top: 0.5rem !important; margin-bottom: 0.5rem !important;}
-    .alert-banner {padding: 7px 12px; border-radius: 4px; margin-bottom: 0px; font-family: Arial; font-size: 13px;}
+    /* Cleared styles to unblock the sidebar grid */
     </style>
     """,
     unsafe_allow_html=True
 )
 
-# 3. FORCE RE-POSITION SIDEBAR BUTTON OUTSIDE OF SIDEBAR BY BYPASSING SHADOW DOM
-st.components.v1.html(
-    """
-    <script>
-    function forceMoveArrow() {
-        const rootDoc = window.parent.document;
-        // Locate the target sidebar collapse button
-        const arrowBtn = rootDoc.querySelector('[data-testid="stSidebarCollapseButton"]');
-        
-        if (arrowBtn) {
-            // Remove it from the sliding left menu and stick it directly to the main body layout
-            rootDoc.body.appendChild(arrowBtn);
-            
-            // Lock it perfectly onto your Main Title text row line
-            arrowBtn.style.position = 'fixed';
-            arrowBtn.style.top = '44px';        /* Aligns it perfectly in line with your title text row */
-            arrowBtn.style.left = '24px';       /* Positions it cleanly outside the left menu container bounds */
-            arrowBtn.style.zIndex = '999999';
-            arrowBtn.style.display = 'block';
-            arrowBtn.style.visibility = 'visible';
-        }
-    }
-
-    // Run continuously to intercept Streamlit's state changes instantly
-    const observer = new MutationObserver((mutations) => {
-        forceMoveArrow();
-    });
-    observer.observe(window.parent.document.body, { childList: true, subtree: true });
-    
-    // Initial call on mount
-    forceMoveArrow();
-    </script>
-    """,
-    height=0,
-    width=0
-)
 
 import psycopg2
 
