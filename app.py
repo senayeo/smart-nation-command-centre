@@ -193,9 +193,14 @@ with st.spinner("⏳ Operations Core Initialising: Syncing live AIoT telemetry r
         sys_configs = dict(config_rows)
         
         if master_df is not None and not master_df.empty:
-            latest_memory_rows = master_df.sort_values('timestamp').groupby('hawker_centre').last().reset_index()
-            snapshots_df = latest_memory_rows[['hawker_centre', 'rat_detections_count', 'lid_breaches_count']].copy()
-            snapshots_df.columns = ['hawker_centre', 'total_rats', 'total_lids']
+            # FIXED: Filters strictly for MASTER_NODE records first to isolate real rodent snapshot numbers
+            master_nodes_only = master_df[master_df['stall_id'] == 'MASTER_NODE']
+            if not master_nodes_only.empty:
+                latest_memory_rows = master_nodes_only.sort_values('timestamp').groupby('hawker_centre').last().reset_index()
+                snapshots_df = latest_memory_rows[['hawker_centre', 'rat_detections_count', 'lid_breaches_count']].copy()
+                snapshots_df.columns = ['hawker_centre', 'total_rats', 'total_lids']
+            else:
+                snapshots_df = pd.DataFrame(columns=['hawker_centre', 'total_rats', 'total_lids'])
         else:
             snapshots_df = pd.DataFrame(columns=['hawker_centre', 'total_rats', 'total_lids'])
         
