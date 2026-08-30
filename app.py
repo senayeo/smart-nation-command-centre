@@ -330,22 +330,21 @@ with st.spinner("⏳ Operations Core Initialising: Syncing live AIoT telemetry r
             [1.0, "#7F1D1D"]   # CORE OUTBREAK: High-contrast dark priority red
         ]
         
-        # 3. RESTORED: Native scatter_map configuration to keep natural map scaling intact
-        fig_map = px.scatter_map(
+        # 3. FIXED: Switching to scatter_mapbox enables controlled zoom scaling vectors
+        fig_map = px.scatter_mapbox(
             map_data, lat="latitude", lon="longitude", size="Display Size",
             color="total_rats", color_continuous_scale=custom_ylorrd,
-            size_max=20, zoom=10.6, map_style="open-street-map", 
+            size_max=38, zoom=10.6, map_style="open-street-map", 
             hover_name="hawker_centre", hover_data=["total_rats", "total_lids", "constituency"],
             labels={"total_rats": "AI-Verified Rodents", "total_lids": "Lid Open Flags"}
         )
         
-        # FIXED SYSTEM OVERRIDE: Forces linear diameter math so circles stay visible and don't shrink massively when zooming
+        # FIXED SYSTEM OVERRIDE: Uses precise linear diameter tracking to keep 6px centres highly visible on zoom
         fig_map.update_traces(
             marker=dict(
                 opacity=0.55,
                 sizemode="diameter",
-                sizeref=0.5,        # Calibrates the visual growth vector to be smooth, not aggressive
-                sizemin=5           # ABSOLUTE FLOOR: Guarantees a circle can NEVER shrink below 5 pixels on screen
+                sizeref=2 * max(map_data['Display Size']) / (38 ** 2)
             )
         )
         fig_map.update_layout(margin={"r":0,"t":0,"l":0,"b":0}, height=410)
