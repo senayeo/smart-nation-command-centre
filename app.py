@@ -39,6 +39,7 @@ st.markdown(
     """,
     unsafe_allow_html=True
 )
+
 # 3. FORCE RE-POSITION SIDEBAR BUTTON OUTSIDE OF SIDEBAR BY BYPASSING SHADOW DOM
 st.components.v1.html(
     """
