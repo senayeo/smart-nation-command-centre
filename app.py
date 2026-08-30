@@ -334,6 +334,7 @@ with st.spinner("⏳ Operations Core Initialising: Syncing live AIoT telemetry r
             map_data, lat="latitude", lon="longitude", size="Display Size",
             color="total_rats", color_continuous_scale=custom_ylorrd,
             size_max=38, zoom=10.6, map_style="open-street-map", 
+            center=dict(lat=1.365, lon=103.8198), # FIXED: Shifts focal viewpoint upward
             hover_name="hawker_centre", hover_data=["total_rats", "total_lids", "constituency"],
             labels={"total_rats": "AI-Verified Rodents", "total_lids": "Lid Open Flags"}
         )
