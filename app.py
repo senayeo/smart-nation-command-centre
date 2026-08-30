@@ -299,28 +299,33 @@ with st.spinner("⏳ Operations Core Initialising: Syncing live AIoT telemetry r
     # We close the connection safely as the memory metrics are already prepared by your initialization function
     conn_map.close()
 
-    # --- EXECUTE OPTIMIZED GIS MAP RENDERER FROM MEMORY CACHE ---
+    # --- EXECUTE INDESTRUCTIBLE GIS MAP RENDERER FROM LATEST SNAPSHOT ---
     if selected_center == 'All Centres (Global View)':
-        map_data = df_map_view.merge(latest_snapshots, on='hawker_centre', how='left').fillna(0)
+        # 1. Isolate the absolute latest single snapshot telemetry row per centre from memory
+        latest_rows = master_df.sort_values('timestamp').groupby('hawker_centre').last().reset_index()
         
-        # FIXED: Explicitly assigns 3 distinct risk range scales matching your seeding logic
-        def calculate_outbreak_size(row):
-            rats = row['total_rats']
-            if rats == 0:
-                return 15.0  # Safe Baseline: Perfect, clear resting visible circle size
-            elif rats <= 150:
-                return 22.0  # Range 1 (STARTING_OUTBREAK): Small alert indicator circle
-            elif rats <= 1000:
-                return 30.0  # Range 2 (NEAR_OUTBREAK): Medium warning circle
+        # 2. Left join ensures all 123 baseline registry centres from df_map_view load directly
+        map_data = df_map_view.merge(latest_rows[['hawker_centre', 'rat_detections_count', 'lid_breaches_count']], on='hawker_centre', how='left').fillna(0)
+        
+        # 3. FIXED: Assigns your 4 explicit pixel tiers based on snapshot severity ranges
+        def assign_snapshot_size(row):
+            count = int(row['rat_detections_count'])
+            if count <= 1:
+                return 12.0  # PRISTINE BASELINE: Handles 0 or 1 background rodent cleanly
+            elif count == 2:
+                return 18.0  # STARTING OUTBREAK: Small warning indicator circle
+            elif count <= 5:
+                return 26.0  # NEAR OUTBREAK: Medium hazard circle
             else:
-                return 42.0  # Range 3 (CORE_OUTBREAK): Large high-risk priority circle
+                return 36.0  # CORE OUTBREAK: Large priority outbreak bubble
                 
-        map_data['Display Size'] = map_data.apply(calculate_outbreak_size, axis=1)
-        fig_map = generate_gis_map(map_data, "total_rats", "hawker_centre", ["total_rats", "total_lids", "constituency"], 10.6)
+        map_data['Display Size'] = map_data.apply(assign_snapshot_size, axis=1)
+        fig_map = generate_gis_map(map_data, "rat_detections_count", "hawker_centre", ["rat_detections_count", "lid_breaches_count", "constituency"], 10.6)
     else:
-        map_data = df_map_view[df_map_view['hawker_centre'] == selected_center].merge(latest_snapshots, on='hawker_centre', how='left').fillna(0)
+        latest_rows = master_df[master_df['hawker_centre'] == selected_center].sort_values('timestamp').tail(1)
+        map_data = df_map_view[df_map_view['hawker_centre'] == selected_center].merge(latest_rows[['hawker_centre', 'rat_detections_count', 'lid_breaches_count']], on='hawker_centre', how='left').fillna(0)
         map_data['Display Size'] = 35.0
-        fig_map = generate_gis_map(map_data, "total_rats", "hawker_centre", ["total_rats", "total_lids"], 14.5)
+        fig_map = generate_gis_map(map_data, "rat_detections_count", "hawker_centre", ["rat_detections_count", "lid_breaches_count"], 14.5)
 
     st.plotly_chart(fig_map, width="stretch")
     st.markdown("<br><hr>", unsafe_allow_html=True)
