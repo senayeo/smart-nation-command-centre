@@ -193,10 +193,9 @@ with st.spinner("⏳ Operations Core Initialising: Syncing live AIoT telemetry r
         sys_configs = dict(config_rows)
         
         if master_df is not None and not master_df.empty:
-            snapshots_df = master_df.groupby('hawker_centre', as_index=False).agg(
-                total_rats=('rat_detections_count', 'sum'),
-                total_lids=('lid_breaches_count', 'sum')
-            )
+            latest_memory_rows = master_df.sort_values('timestamp').groupby('hawker_centre').last().reset_index()
+            snapshots_df = latest_memory_rows[['hawker_centre', 'rat_detections_count', 'lid_breaches_count']].copy()
+            snapshots_df.columns = ['hawker_centre', 'total_rats', 'total_lids']
         else:
             snapshots_df = pd.DataFrame(columns=['hawker_centre', 'total_rats', 'total_lids'])
         
