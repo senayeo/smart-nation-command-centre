@@ -301,31 +301,28 @@ with st.spinner("⏳ Operations Core Initialising: Syncing live AIoT telemetry r
 
     # --- EXECUTE INDESTRUCTIBLE GIS MAP RENDERER FROM LATEST SNAPSHOT ---
     if selected_center == 'All Centres (Global View)':
-        # 1. Isolate the absolute latest single snapshot telemetry row per centre from memory
-        latest_rows = master_df.sort_values('timestamp').groupby('hawker_centre').last().reset_index()
+        # RESTORED: Uses your original, working data merge to pull correct counts and center locations
+        map_data = df_map_view.merge(latest_snapshots, on='hawker_centre', how='left').fillna(0)
         
-        # 2. Left join ensures all 123 baseline registry centres from df_map_view load directly
-        map_data = df_map_view.merge(latest_rows[['hawker_centre', 'rat_detections_count', 'lid_breaches_count']], on='hawker_centre', how='left').fillna(0)
-        
-        # 3. FIXED: Assigns your 4 explicit pixel tiers based on snapshot severity ranges
+        # FIXED: Assigns your exact approved 4-tier pixel layout sizes (8, 12, 16, 20)
         def assign_snapshot_size(row):
-            count = int(row['rat_detections_count'])
+            count = int(row['total_rats'])
             if count <= 1:
-                return 12.0  # PRISTINE BASELINE: Handles 0 or 1 background rodent cleanly
+                return 8.0   # PRISTINE BASELINE: Small, crisp resting baseline dots
             elif count == 2:
-                return 18.0  # STARTING OUTBREAK: Small warning indicator circle
+                return 12.0  # STARTING OUTBREAK: First step alert indicator
             elif count <= 5:
-                return 26.0  # NEAR OUTBREAK: Medium hazard circle
+                return 16.0  # NEAR OUTBREAK: Medium warning circle
             else:
-                return 36.0  # CORE OUTBREAK: Large priority outbreak bubble
+                return 20.0  # CORE OUTBREAK: Large priority hazard circle
                 
         map_data['Display Size'] = map_data.apply(assign_snapshot_size, axis=1)
-        fig_map = generate_gis_map(map_data, "rat_detections_count", "hawker_centre", ["rat_detections_count", "lid_breaches_count", "constituency"], 10.6)
+        # RESTORED: Passes "total_rats" to bring back your original dynamic color gradient scale
+        fig_map = generate_gis_map(map_data, "total_rats", "hawker_centre", ["total_rats", "total_lids", "constituency"], 10.6)
     else:
-        latest_rows = master_df[master_df['hawker_centre'] == selected_center].sort_values('timestamp').tail(1)
-        map_data = df_map_view[df_map_view['hawker_centre'] == selected_center].merge(latest_rows[['hawker_centre', 'rat_detections_count', 'lid_breaches_count']], on='hawker_centre', how='left').fillna(0)
+        map_data = df_map_view[df_map_view['hawker_centre'] == selected_center].merge(latest_snapshots, on='hawker_centre', how='left').fillna(0)
         map_data['Display Size'] = 35.0
-        fig_map = generate_gis_map(map_data, "rat_detections_count", "hawker_centre", ["rat_detections_count", "lid_breaches_count"], 14.5)
+        fig_map = generate_gis_map(map_data, "total_rats", "hawker_centre", ["total_rats", "total_lids"], 14.5)
 
     st.plotly_chart(fig_map, width="stretch")
     st.markdown("<br><hr>", unsafe_allow_html=True)
