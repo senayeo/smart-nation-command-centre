@@ -16,12 +16,34 @@ st.set_page_config(page_title="Smart Waste & Rodent Prevention Console", layout=
 st.markdown(
     """
     <style>
-    /* Cleared styles to unblock the sidebar grid */
+    /* 1. COMPLETELY MASK THE GITHUB TOOLBAR WITHOUT SLICING THE STATUS CONTAINER SPACE */
+    [data-testid="stHeader"] button, 
+    [data-testid="stHeader"] a, 
+    .stAppDeployButton {
+        display: none !important;
+        visibility: hidden !important;
+    }
+
+    /* 2. ANCHOR THE TOGGLE ARROW NATIVELY ON THE MAIN TITLE ROW OUTSIDE OF THE SIDEBAR BOX */
+    div[data-testid="collapsedControl"] {
+        display: block !important;
+        visibility: visible !important;
+        position: fixed !important;
+        top: 24px !important;  /* Positions it perfectly in line with your main title text row */
+        left: 20px !important;
+        z-index: 999999 !important;
+    }
+
+    /* Layout block container margins and column width constraints */
+    .block-container {padding-top: 2.0rem !important; padding-bottom: 1rem !important;}
+    h2 {margin-bottom: 0.5rem !important;}
+    .stSelectbox {margin-bottom: 0.4rem !important;}
+    hr {margin-top: 0.5rem !important; margin-bottom: 0.5rem !important;}
+    .alert-banner {padding: 7px 12px; border-radius: 4px; margin-bottom: 0px; font-family: Arial; font-size: 13px;}
     </style>
     """,
     unsafe_allow_html=True
 )
-
 
 import psycopg2
 
