@@ -12,11 +12,37 @@ from assets import BASE64_IMAGE
 st.set_page_config(page_title="Smart Waste & Rodent Prevention Console", layout="wide", page_icon="📊", initial_sidebar_state="expanded")
 
 # INJECT THIS UPDATED CONFIGURATION STREAM TO WIPE THE GITHUB TOOLBAR COMPLETELY and VAPORISE THE BOTTOM RIGHT CORNER ENTIRELY
-# RESTORE NATIVE CONTAINER: Safely clears the layout blocks to force your left menu back instantly
 st.markdown(
     """
     <style>
-    /* Cleared styles to unblock the sidebar grid */
+    /* 1. COMPLETELY WIPE OUT THE TOP RIGHT MENU (GitHub icon, Share, Pencil) */
+    [data-testid="stHeader"] button, 
+    [data-testid="stHeader"] a,
+    [data-testid="stHeader"] div,
+    .stAppDeployButton {
+        display: none !important;
+        visibility: hidden !important;
+        opacity: 0 !important;
+        height: 0px !important;
+        width: 0px !important;
+    }
+    
+    /* 2. SHIFT THE TOGGLE ARROW ICON DOWN TO THE NEXT ROW (Safe from header hiding) */
+    div[data-testid="collapsedControl"] {
+        display: block !important;
+        visibility: visible !important;
+        position: fixed !important;
+        top: 75px !important;  /* Shifts it down to the next row below the title margin */
+        left: 16px !important;
+        z-index: 999999 !important;
+    }
+
+    /* Layout block container margins and column width constraints */
+    .block-container {padding-top: 2.0rem !important; padding-bottom: 1rem !important;}
+    h2 {margin-bottom: 0.5rem !important;}
+    .stSelectbox {margin-bottom: 0.4rem !important;}
+    hr {margin-top: 0.5rem !important; margin-bottom: 0.5rem !important;}
+    .alert-banner {padding: 7px 12px; border-radius: 4px; margin-bottom: 0px; font-family: Arial; font-size: 13px;}
     </style>
     """,
     unsafe_allow_html=True
