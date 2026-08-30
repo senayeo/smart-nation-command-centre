@@ -330,7 +330,7 @@ with st.spinner("⏳ Operations Core Initialising: Syncing live AIoT telemetry r
             [1.0, "#7F1D1D"]   # CORE OUTBREAK: High-contrast dark priority red
         ]
         
-        # 3. RESTORED: Pure native Plotly configuration to bring the map of Singapore back instantly
+        # 3. RESTORED: Native scatter_map configuration to keep natural map scaling intact
         fig_map = px.scatter_map(
             map_data, lat="latitude", lon="longitude", size="Display Size",
             color="total_rats", color_continuous_scale=custom_ylorrd,
@@ -338,8 +338,16 @@ with st.spinner("⏳ Operations Core Initialising: Syncing live AIoT telemetry r
             hover_name="hawker_centre", hover_data=["total_rats", "total_lids", "constituency"],
             labels={"total_rats": "AI-Verified Rodents", "total_lids": "Lid Open Flags"}
         )
-        # Set opacity directly inside the traces layer to force your light translucent yellow style cleanly
-        fig_map.update_traces(marker=dict(opacity=0.55))
+        
+        # FIXED SYSTEM OVERRIDE: Forces linear diameter math so circles stay visible and don't shrink massively when zooming
+        fig_map.update_traces(
+            marker=dict(
+                opacity=0.55,
+                sizemode="diameter",
+                sizeref=0.5,        # Calibrates the visual growth vector to be smooth, not aggressive
+                sizemin=5           # ABSOLUTE FLOOR: Guarantees a circle can NEVER shrink below 5 pixels on screen
+            )
+        )
         fig_map.update_layout(margin={"r":0,"t":0,"l":0,"b":0}, height=410)
         
     else:
