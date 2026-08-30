@@ -11,37 +11,36 @@ from assets import BASE64_IMAGE
 # KEEP ONLY THIS SINGLE CONFIGURATION CALL AT THE VERY TOP
 st.set_page_config(page_title="Smart Waste & Rodent Prevention Console", layout="wide", page_icon="📊", initial_sidebar_state="expanded")
 
-# INJECT THIS UPDATED CONFIGURATION STREAM TO WIPE THE GITHUB TOOLBAR COMPLETELY and VAPORISE THE BOTTOM RIGHT CORNER ENTIRELY
-    st.markdown(
-        """
-        <style>
-        /* TARGET ONLY THE TOP-RIGHT MENUS: Deletes GitHub links and deploy controls exclusively */
-        [data-testid="stHeader"] button, 
-        [data-testid="stHeader"] a,
-        .stAppDeployButton {
-            display: none !important;
-            visibility: hidden !important;
-            opacity: 0 !important;
-            height: 0px !important;
-            width: 0px !important;
-        }
-        
-        /* FORCE THE LEFT MENU VIEWPORT TO VISIBLE: Completely protects your sidebar layout container from clipping */
-        [data-testid="stSidebar"] {
-            display: flex !important;
-            visibility: visible !important;
-        }
+st.markdown(
+    """
+    <style>
+    /* TARGET ONLY THE TOP-RIGHT MENUS: Deletes GitHub links and deploy controls exclusively */
+    [data-testid="stHeader"] button, 
+    [data-testid="stHeader"] a,
+    .stAppDeployButton {
+        display: none !important;
+        visibility: hidden !important;
+        opacity: 0 !important;
+        height: 0px !important;
+        width: 0px !important;
+    }
+    
+    /* FORCE THE LEFT MENU VIEWPORT TO VISIBLE: Completely protects your sidebar layout container from clipping */
+    [data-testid="stSidebar"] {
+        display: flex !important;
+        visibility: visible !important;
+    }
 
-        /* Layout block container margins and column width constraints */
-        .block-container {padding-top: 2.0rem !important; padding-bottom: 1rem !important;}
-        h2 {margin-bottom: 0.5rem !important;}
-        .stSelectbox {margin-bottom: 0.4rem !important;}
-        hr {margin-top: 0.5rem !important; margin-bottom: 0.5rem !important;}
-        .alert-banner {padding: 7px 12px; border-radius: 4px; margin-bottom: 0px; font-family: Arial; font-size: 13px;}
-        </style>
-        """,
-        unsafe_allow_html=True
-    )
+    /* Layout block container margins and column width constraints */
+    .block-container {padding-top: 2.0rem !important; padding-bottom: 1rem !important;}
+    h2 {margin-bottom: 0.5rem !important;}
+    .stSelectbox {margin-bottom: 0.4rem !important;}
+    hr {margin-top: 0.5rem !important; margin-bottom: 0.5rem !important;}
+    .alert-banner {padding: 7px 12px; border-radius: 4px; margin-bottom: 0px; font-family: Arial; font-size: 13px;}
+    </style>
+    """,
+    unsafe_allow_html=True
+)
 
 import psycopg2
 
