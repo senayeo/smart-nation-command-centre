@@ -17,10 +17,10 @@ st.markdown(
     <style>
     /* Absolute target-lock to delete the entire upper action toolbar block from the DOM tree */
     /* KEEP STREAMLIT HIDDEN: Vapourises the top-right GitHub icon and deploy buttons permanently */
+    /* KEEP STREAMLIT HIDDEN: Vapourises the top-right GitHub icon and deploy buttons permanently */
     [data-testid="stHeader"] button, [data-testid="stHeader"] a {display: none !important;}
     [data-testid="stHeader"] {background: transparent !important;}
 
-    header {display: none !important; visibility: hidden !important; height: 0px !important;}
     .stAppDeployButton {display: none !important; visibility: hidden !important;}
     
     /* Global fallback to trap any stray infrastructure code buttons pushing through */
