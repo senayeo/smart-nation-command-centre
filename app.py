@@ -29,21 +29,6 @@ st.markdown(
         visibility: hidden !important;
     }
 
-    /* 3. EXTRACT THE TOGGLE ARROW OUTSIDE THE MENU AND LOCK IT DIRECTLY ON THE TITLE ROW */
-    [data-testid="stSidebarCollapseButton"] {
-        position: fixed !important;
-        top: 42px !important;   /* Aligns it perfectly with the height of your main title text row */
-        left: 24px !important;  /* Places it completely outside the left menu container boundary */
-        z-index: 999999 !important;
-    }
-    
-    /* Ensure the sidebar element itself leaves space for the newly positioned title-row arrow button */
-    [data-testid="stSidebar"] [data-testid="stSidebarCollapseButton"] {
-        position: relative !important;
-        top: 0px !important;
-        left: 0px !important;
-    }
-
     /* Layout block container margins and column width constraints */
     .block-container {padding-top: 1.0rem !important; padding-bottom: 1rem !important;}
     h2 {margin-bottom: 0.5rem !important;}
@@ -53,6 +38,43 @@ st.markdown(
     </style>
     """,
     unsafe_allow_html=True
+)
+
+# 3. FORCE RE-POSITION SIDEBAR BUTTON OUTSIDE OF SIDEBAR BY BYPASSING SHADOW DOM
+st.components.v1.html(
+    """
+    <script>
+    function forceMoveArrow() {
+        const rootDoc = window.parent.document;
+        // Locate the target sidebar collapse button
+        const arrowBtn = rootDoc.querySelector('[data-testid="stSidebarCollapseButton"]');
+        
+        if (arrowBtn) {
+            // Remove it from the sliding left menu and stick it directly to the main body layout
+            rootDoc.body.appendChild(arrowBtn);
+            
+            // Lock it perfectly onto your Main Title text row line
+            arrowBtn.style.position = 'fixed';
+            arrowBtn.style.top = '44px';        /* Aligns it perfectly in line with your title text row */
+            arrowBtn.style.left = '24px';       /* Positions it cleanly outside the left menu container bounds */
+            arrowBtn.style.zIndex = '999999';
+            arrowBtn.style.display = 'block';
+            arrowBtn.style.visibility = 'visible';
+        }
+    }
+
+    // Run continuously to intercept Streamlit's state changes instantly
+    const observer = new MutationObserver((mutations) => {
+        forceMoveArrow();
+    });
+    observer.observe(window.parent.document.body, { childList: true, subtree: true });
+    
+    // Initial call on mount
+    forceMoveArrow();
+    </script>
+    """,
+    height=0,
+    width=0
 )
 
 import psycopg2
