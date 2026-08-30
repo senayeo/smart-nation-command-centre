@@ -15,26 +15,29 @@ st.set_page_config(page_title="Smart Waste & Rodent Prevention Console", layout=
 st.markdown(
     """
     <style>
-    /* 1. COMPLETELY WIPE OUT THE TOP RIGHT MENU (GitHub icon, Share, Pencil) */
+    /* 1. MASK ONLY THE GITHUB AND DEPLOY BUTTON GRAPHICS WITHOUT TOUCHING THE STATUS DIVS */
     [data-testid="stHeader"] button, 
     [data-testid="stHeader"] a,
-    [data-testid="stHeader"] div,
     .stAppDeployButton {
         display: none !important;
         visibility: hidden !important;
-        opacity: 0 !important;
-        height: 0px !important;
-        width: 0px !important;
     }
     
-    /* 2. SHIFT THE TOGGLE ARROW ICON DOWN TO THE NEXT ROW (Safe from header hiding) */
+    /* 2. POSITION THE SIDEBAR TOGGLE BUTTON CLEANLY ON THE MAIN TITLE ROW OUTSIDE THE MENU */
     div[data-testid="collapsedControl"] {
         display: block !important;
         visibility: visible !important;
         position: fixed !important;
-        top: 75px !important;  /* Shifts it down to the next row below the title margin */
-        left: 16px !important;
+        top: 48px !important;  /* Aligns it perfectly in line with the main title row text */
+        left: 20px !important;
         z-index: 999999 !important;
+        background-color: transparent !important;
+    }
+    
+    /* Ensure the button icon within it stays sharp and fully clickable */
+    div[data-testid="collapsedControl"] button {
+        background-color: transparent !important;
+        border: none !important;
     }
 
     /* Layout block container margins and column width constraints */
@@ -47,7 +50,6 @@ st.markdown(
     """,
     unsafe_allow_html=True
 )
-
 
 import psycopg2
 
