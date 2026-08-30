@@ -32,7 +32,7 @@ st.markdown(
     /* 3. RESTORE THE NATIVE BUTTON: Allow Streamlit to draw the toggle button normally */
     [data-testid="stSidebarCollapseButton"] {
         display: block !important;
-        visibility: visible !important;
+        visibility: hidden !important;
     }
 
     /* Layout block container margins and column width constraints */
