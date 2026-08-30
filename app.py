@@ -284,13 +284,13 @@ with st.spinner("⏳ Operations Core Initialising: Syncing live AIoT telemetry r
     m1, m2, m3, m4 = st.columns(4)
     with m1: 
         true_total_centres = len(center_list) - 1
-        st.markdown(f'<div style="background-color: #F8F9FA; padding: 12px; border-left: 4px solid #102542; border-radius: 4px;"><p style="margin:0px; font-size:11px; color:#7f8c8d; font-weight:bold;">HAWKER CENTRES TRACKED</p><h3 style="margin:0px; color:#102542; font-size: 22px;">{true_total_centres} Centres</h3></div>', unsafe_allow_html=True)
+        st.markdown(f'<div style="background-color: #F8F9FA; padding: 4px 12px; border-left: 4px solid #102542; border-radius: 4px;"><p style="margin:0px; font-size:11px; color:#7f8c8d; font-weight:bold;">HAWKER CENTRES TRACKED</p><h3 style="margin:0px; color:#102542; font-size: 22px;">{true_total_centres} Centres</h3></div>', unsafe_allow_html=True)
     with m2: 
-        st.markdown(f'<div style="background-color: #F8F9FA; padding: 12px; border-left: 4px solid #2980b9; border-radius: 4px;"><p style="margin:0px; font-size:11px; color:#7f8c8d; font-weight:bold;">LID BREACHES [F1]</p><h3 style="margin:0px; color:#2980b9; font-size: 22px;">{master_df["lid_breaches_count"].sum() if not master_df.empty and "lid_breaches_count" in master_df.columns else 0} Flags</h3></div>', unsafe_allow_html=True)
+        st.markdown(f'<div style="background-color: #F8F9FA; padding: 4px 12px; border-left: 4px solid #2980b9; border-radius: 4px;"><p style="margin:0px; font-size:11px; color:#7f8c8d; font-weight:bold;">LID BREACHES [F1]</p><h3 style="margin:0px; color:#2980b9; font-size: 22px;">{master_df["lid_breaches_count"].sum() if not master_df.empty and "lid_breaches_count" in master_df.columns else 0} Flags</h3></div>', unsafe_allow_html=True)
     with m3: 
-        st.markdown(f'<div style="background-color: #FFF0F0; padding: 12px; border-left: 4px solid #E74C3C; border-radius: 4px;"><p style="margin:0px; font-size:11px; color:#7f8c8d; font-weight:bold;">YOLOv8 DETECTIONS [F2]</p><h3 style="margin:0px; color:#E74C3C; font-size: 22px;">{master_df["rat_detections_count"].sum() if not master_df.empty and "rat_detections_count" in master_df.columns else 0} Verified</h3></div>', unsafe_allow_html=True)
+        st.markdown(f'<div style="background-color: #FFF0F0; padding: 4px 12px; border-left: 4px solid #E74C3C; border-radius: 4px;"><p style="margin:0px; font-size:11px; color:#7f8c8d; font-weight:bold;">YOLOv8 DETECTIONS [F2]</p><h3 style="margin:0px; color:#E74C3C; font-size: 22px;">{master_df["rat_detections_count"].sum() if not master_df.empty and "rat_detections_count" in master_df.columns else 0} Verified</h3></div>', unsafe_allow_html=True)
     with m4: 
-        st.markdown(f'<div style="background-color: #F8F9FA; padding: 12px; border-left: 4px solid #2ECC71; border-radius: 4px;"><p style="margin:0px; font-size:11px; color:#7f8c8d; font-weight:bold;">MEAN FILL VOLUME [F1]</p><h3 style="margin:0px; color:#2ECC71; font-size: 22px;">{round(master_df["fill_level"].mean(), 1) if not master_df.empty and "fill_level" in master_df.columns else 0.0}%</h3></div>', unsafe_allow_html=True)
+        st.markdown(f'<div style="background-color: #F8F9FA; padding: 4px 12px; border-left: 4px solid #2ECC71; border-radius: 4px;"><p style="margin:0px; font-size:11px; color:#7f8c8d; font-weight:bold;">MEAN FILL VOLUME [F1]</p><h3 style="margin:0px; color:#2ECC71; font-size: 22px;">{round(master_df["fill_level"].mean(), 1) if not master_df.empty and "fill_level" in master_df.columns else 0.0}%</h3></div>', unsafe_allow_html=True)
 
     st.markdown("<br>", unsafe_allow_html=True)
     st.markdown("<h4 style='color: #102542; font-family: Arial; margin-bottom: 10px;'>📍 Geospatial Information System (GIS) Hotspot Map</h4>", unsafe_allow_html=True)
@@ -340,7 +340,7 @@ with st.spinner("⏳ Operations Core Initialising: Syncing live AIoT telemetry r
         
         # FIXED OVERRIDE: Applies a balanced opacity layer so the yellow circles never bleach out on zoom
         fig_map.update_traces(marker=dict(opacity=0.65))
-        fig_map.update_layout(margin={"r":0,"t":0,"l":0,"b":0}, height=410)
+        fig_map.update_layout(margin={"r":0,"t":0,"l":0,"b":0}, height=530)
         
     else:
         map_data = df_map_view[df_map_view['hawker_centre'] == selected_center].merge(latest_snapshots, on='hawker_centre', how='left').fillna(0)
