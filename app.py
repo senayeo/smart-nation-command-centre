@@ -11,40 +11,11 @@ from assets import BASE64_IMAGE
 # KEEP ONLY THIS SINGLE CONFIGURATION CALL AT THE VERY TOP
 st.set_page_config(page_title="Smart Waste & Rodent Prevention Console", layout="wide", page_icon="📊", initial_sidebar_state="expanded")
 
+# INJECT THIS UPDATED CONFIGURATION STREAM TO WIPE THE GITHUB TOOLBAR COMPLETELY and VAPORISE THE BOTTOM RIGHT CORNER ENTIRELY
 st.markdown(
     """
     <style>
-    /* 1. COLLAPSE THE TOP HEADER SPACE SO YOUR TITLE SHIFTS ALL THE WAY BACK UP */
-    [data-testid="stHeader"] {
-        background-color: transparent !important;
-        height: 0px !important;
-        min-height: 0px !important;
-    }
-
-    /* 2. COMPLETELY VAPORIZE THE GITHUB ICONS AND DEPLOY GRAPHICS */
-    [data-testid="stHeader"] button, 
-    [data-testid="stHeader"] a, 
-    .stAppDeployButton {
-        display: none !important;
-        visibility: hidden !important;
-    }
-
-    /* 3. FIX THE ARROW UP: Anchors the button to the viewport screen so it NEVER disappears when the menu collapses */
-    [data-testid="stSidebarCollapseButton"] {
-        display: block !important;
-        visibility: visible !important;
-        position: fixed !important;   /* FIXED: Locks the button to the monitor glass, independent of sliding panels */
-        top: 12px !important;         /* Stuck at the topmost row of your window frame */
-        left: 16px !important;        /* Anchored safely on the outer left edge */
-        z-index: 999999 !important;
-    }
-
-    /* Layout block container margins and column width constraints */
-    .block-container {padding-top: 1.0rem !important; padding-bottom: 1rem !important;}
-    h2 {margin-bottom: 0.5rem !important;}
-    .stSelectbox {margin-bottom: 0.4rem !important;}
-    hr {margin-top: 0.5rem !important; margin-bottom: 0.5rem !important;}
-    .alert-banner {padding: 7px 12px; border-radius: 4px; margin-bottom: 0px; font-family: Arial; font-size: 13px;}
+    /* Cleared styles to unblock the sidebar grid */
     </style>
     """,
     unsafe_allow_html=True
