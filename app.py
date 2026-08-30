@@ -16,10 +16,22 @@ st.set_page_config(page_title="Smart Waste & Rodent Prevention Console", layout=
 st.markdown(
     """
     <style>
-    /* COMPLETELY PURGE ALL EXPERIMENTAL ARROW AND HEADER OVERRIDES */
+    /* 1. KEEPS THE CONTAINER HEIGHT ACTIVE SO THE LOADING TEXT DOES NOT SLICE IN HALF */
+    [data-testid="stHeader"] {
+        background-color: transparent !important;
+        height: 2.875rem !important;
+        min-height: 2.875rem !important;
+        display: block !important;
+    }
+
+    /* 2. VAPORIZES THE INNER BUTTON GRAPHICS (GitHub, Share, Pencil, Deploy) PERMANENTLY */
+    [data-testid="stHeader"] button, 
+    [data-testid="stHeader"] a,
+    [data-testid="stHeader"] div[data-testid="stStatusWidget"],
     .stAppDeployButton {
-        display: none !important;
+        opacity: 0 !important;
         visibility: hidden !important;
+        pointer-events: none !important;
     }
 
     /* Layout block container margins and column width constraints */
