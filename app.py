@@ -303,16 +303,15 @@ with st.spinner("⏳ Operations Core Initialising: Syncing live AIoT telemetry r
     # We close the connection safely as the memory metrics are already prepared by your initialization function
     conn_map.close()
 
-    # --- EXECUTE INDESTRUCTIBLE GIS MAP RENDERER FROM LATEST SNAPSHOT ---
+    # --- EXECUTE LOCK-STEP RISK RANGES GIS MAP RENDERER ---
     if selected_center == 'All Centres (Global View)':
-        # RESTORED: Uses your original, working data merge to pull correct counts and center locations
         map_data = df_map_view.merge(latest_snapshots, on='hawker_centre', how='left').fillna(0)
         
-        # FIXED: Assigns your exact approved 4-tier pixel layout sizes (8, 12, 16, 20)
+        # 1. FIXED: Set explicit, discrete sizes based on your exact layout targets
         def assign_snapshot_size(row):
             count = int(row['total_rats'])
             if count <= 1:
-                return 8.0   # PRISTINE BASELINE: Small, crisp resting baseline dots
+                return 6.0   # RESTORED: Fixed crisp size of 6 pixels for baseline centres
             elif count == 2:
                 return 12.0  # STARTING OUTBREAK: First step alert indicator
             elif count <= 5:
@@ -320,9 +319,31 @@ with st.spinner("⏳ Operations Core Initialising: Syncing live AIoT telemetry r
             else:
                 return 20.0  # CORE OUTBREAK: Large priority hazard circle
                 
+        # 2. FIXED: Injects your exact high-contrast translucent warning colors explicitly
+        def assign_snapshot_color(row):
+            count = int(row['total_rats'])
+            if count <= 1:
+                return "rgba(254, 240, 138, 0.45)"  # RESTORED: Light, highly translucent yellow color
+            elif count == 2:
+                return "rgba(245, 158, 11, 0.85)"   # STARTING OUTBREAK: Translucent alert amber
+            elif count <= 5:
+                return "rgba(239, 68, 68, 0.90)"    # NEAR OUTBREAK: Deep translucent warning red
+            else:
+                return "rgba(127, 29, 29, 0.95)"     # CORE OUTBREAK: High-contrast dark priority red
+                
         map_data['Display Size'] = map_data.apply(assign_snapshot_size, axis=1)
-        # RESTORED: Passes "total_rats" to bring back your original dynamic color gradient scale
-        fig_map = generate_gis_map(map_data, "total_rats", "hawker_centre", ["total_rats", "total_lids", "constituency"], 10.6)
+        map_data['Map Color'] = map_data.apply(assign_snapshot_color, axis=1)
+        
+        # 3. FIXED: Point the map to use your explicit 'Map Color' column instead of the continuous scale
+        fig_map = px.scatter_map(
+            map_data, lat="latitude", lon="longitude", size="Display Size",
+            color="Map Color", color_discrete_map="identity",
+            size_max=20, zoom=10.6, map_style="open-street-map", 
+            hover_name="hawker_centre", hover_data=["total_rats", "total_lids", "constituency"],
+            labels={"total_rats": "AI-Verified Rodents", "total_lids": "Lid Open Flags"}
+        )
+        fig_map.update_layout(margin={"r":0,"t":0,"l":0,"b":0}, height=410, showlegend=False)
+        
     else:
         map_data = df_map_view[df_map_view['hawker_centre'] == selected_center].merge(latest_snapshots, on='hawker_centre', how='left').fillna(0)
         map_data['Display Size'] = 35.0
