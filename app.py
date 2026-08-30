@@ -15,12 +15,25 @@ st.set_page_config(page_title="Smart Waste & Rodent Prevention Console", layout=
 st.markdown(
     """
     <style>
-    /* Cleared styles to unblock the sidebar grid */
+    /* 1. MASK THE GITHUB TOOLBAR WITHOUT SQUASHING THE CONTAINER MARGINS */
+    [data-testid="stHeader"] button, 
+    [data-testid="stHeader"] a, 
+    .stAppDeployButton {
+        display: none !important;
+        visibility: hidden !important;
+    }
+
+    /* 2. FORCE THE TOGGLE ARROW ICON NATIVELY DOWN TO YOUR MAIN TITLE ROW */
+    [data-testid="stSidebarCollapseButton"] {
+        position: fixed !important;
+        top: 48px !important;   /* Pulls the arrow cleanly down onto the Main Title row */
+        left: 18px !important;  /* Places it perfectly on the outer edge, outside the menu */
+        z-index: 999999 !important;
+    }
     </style>
     """,
     unsafe_allow_html=True
 )
-
 
 import psycopg2
 
