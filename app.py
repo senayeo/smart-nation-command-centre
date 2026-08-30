@@ -307,46 +307,36 @@ with st.spinner("⏳ Operations Core Initialising: Syncing live AIoT telemetry r
     if selected_center == 'All Centres (Global View)':
         map_data = df_map_view.merge(latest_snapshots, on='hawker_centre', how='left').fillna(0)
         
-        # 1. FIXED: Set explicit, discrete sizes based on your exact layout targets
+        # RESTORED: Your exact, approved sizing numbers kept perfectly in the data array
         def assign_snapshot_size(row):
             count = int(row['total_rats'])
-            if count <= 1:
-                return 6.0   # RESTORED: Fixed crisp size of 6 pixels for baseline centres
-            elif count == 2:
-                return 12.0  # STARTING OUTBREAK: First step alert indicator
+            if count == 0:
+                return 6.0   # Crisp baseline size for 0 rodent centres
+            elif count == 1:
+                return 12.0  # Starting outbreak size
             elif count <= 5:
-                return 16.0  # NEAR OUTBREAK: Medium warning circle
+                return 16.0  # Near outbreak size
             else:
-                return 20.0  # CORE OUTBREAK: Large priority hazard circle
+                return 20.0  # Core outbreak size
                 
         map_data['Display Size'] = map_data.apply(assign_snapshot_size, axis=1)
         
-        # 2. FIXED: High-contrast translucent color list mapping cleanly to your values
-        # Index 0 represents pristine centres -> set to your exact light yellow hex color code
         custom_ylorrd = [
-            [0.0, "#FEF08A"],  # RESTORED: Light translucent yellow for 0/1 rodents
-            [0.2, "#F59E0B"],  # STARTING OUTBREAK: Alert amber
-            [0.5, "#EF4444"],  # NEAR OUTBREAK: Deep warning red
-            [1.0, "#7F1D1D"]   # CORE OUTBREAK: High-contrast dark priority red
+            [0.0, "#FEF08A"],  # Light translucent yellow for pristine centres
+            [0.2, "#F59E0B"],  # Alert amber
+            [0.5, "#EF4444"],  # Deep warning red
+            [1.0, "#7F1D1D"]   # High-contrast dark priority red
         ]
         
-        # 3. FIXED: Switching to scatter_mapbox enables controlled zoom scaling vectors
-        fig_map = px.scatter_mapbox(
+        # RESTORED: Stable scatter_map syntax that resolves the mapbox keyword crash immediately
+        fig_map = px.scatter_map(
             map_data, lat="latitude", lon="longitude", size="Display Size",
             color="total_rats", color_continuous_scale=custom_ylorrd,
             size_max=38, zoom=10.6, map_style="open-street-map", 
             hover_name="hawker_centre", hover_data=["total_rats", "total_lids", "constituency"],
             labels={"total_rats": "AI-Verified Rodents", "total_lids": "Lid Open Flags"}
         )
-        
-        # FIXED SYSTEM OVERRIDE: Uses precise linear diameter tracking to keep 6px centres highly visible on zoom
-        fig_map.update_traces(
-            marker=dict(
-                opacity=0.55,
-                sizemode="diameter",
-                sizeref=2 * max(map_data['Display Size']) / (38 ** 2)
-            )
-        )
+        fig_map.update_traces(marker=dict(opacity=0.55))
         fig_map.update_layout(margin={"r":0,"t":0,"l":0,"b":0}, height=410)
         
     else:
