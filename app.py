@@ -11,14 +11,87 @@ from assets import BASE64_IMAGE
 # KEEP ONLY THIS SINGLE CONFIGURATION CALL AT THE VERY TOP
 st.set_page_config(page_title="Smart Waste & Rodent Prevention Console", layout="wide", page_icon="📊", initial_sidebar_state="expanded")
 
-# INJECT THIS UPDATED CONFIGURATION STREAM TO WIPE THE GITHUB TOOLBAR COMPLETELY and VAPORISE THE BOTTOM RIGHT CORNER ENTIRELY
 st.markdown(
     """
     <style>
-    /* Cleared styles to unblock the sidebar grid */
+    /* 1. COLLAPSE HEADER AND PURGE DEPLOY/GITHUB CONTROLS */
+    [data-testid="stHeader"] {
+        background-color: transparent !important;
+        height: 0px !important;
+        min-height: 0px !important;
+    }
+    [data-testid="stHeader"] button, 
+    [data-testid="stHeader"] a, 
+    .stAppDeployButton,
+    [data-testid="stSidebarCollapseButton"] {
+        display: none !important;
+        visibility: hidden !important;
+        opacity: 0 !important;
+    }
+
+    /* Layout block container margins and column width constraints */
+    .block-container {padding-top: 1.0rem !important; padding-bottom: 1rem !important;}
+    h2 {margin-bottom: 0.5rem !important;}
+    .stSelectbox {margin-bottom: 0.4rem !important;}
+    hr {margin-top: 0.5rem !important; margin-bottom: 0.5rem !important;}
+    .alert-banner {padding: 7px 12px; border-radius: 4px; margin-bottom: 0px; font-family: Arial; font-size: 13px;}
     </style>
     """,
     unsafe_allow_html=True
+)
+
+# 2. INJECT INDEPENDENT CUSTOM TOGGLE BUTTON OUTSIDE SIDEBAR ANIMATION CONTAINERS
+st.components.v1.html(
+    """
+    <div id="custom-toggle-box" style="position: fixed; top: 16px; left: 16px; z-index: 99999999;">
+        <button id="toggle-arrow-btn" style="
+            background: #F8FAFC; 
+            border: 1px solid #CBD5E1; 
+            border-radius: 6px; 
+            padding: 6px 12px; 
+            font-size: 16px; 
+            cursor: pointer; 
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            color: #334155;
+            font-weight: bold;
+            transition: all 0.2s;
+        ">☰ Menu</button>
+    </div>
+
+    <script>
+    const btn = document.getElementById('toggle-arrow-btn');
+    
+    btn.addEventListener('click', () => {
+        // Access the parent document layout tree directly
+        const rootDoc = window.parent.document;
+        
+        // Find Streamlit's actual underlying structural toggle button inside the Shadow DOM layer
+        const nativeBtn = rootDoc.querySelector('[data-testid="stSidebarCollapseButton"] button') || 
+                          rootDoc.querySelector('.stSidebarCollapseButton button') ||
+                          rootDoc.querySelector('[data-testid="collapsedControl"] button');
+                          
+        if (nativeBtn) {
+            // Programmatically trigger a hardware click on the underlying button to expand/collapse the menu
+            nativeBtn.click();
+        }
+    });
+
+    // Dynamic label updater to show active state
+    setInterval(() => {
+        const rootDoc = window.parent.document;
+        const sidebar = rootDoc.querySelector('[data-testid="stSidebar"]');
+        if (sidebar) {
+            // Check computed visibility style of native panel to update label text matching state
+            const isClosed = sidebar.getAttribute('aria-expanded') === 'false' || sidebar.style.transform.includes('-');
+            btn.innerText = isClosed ? "❯ Menu" : "❮ Hide";
+            btn.style.background = isClosed ? "#3b82f6" : "#F8FAFC";
+            btn.style.color = isClosed ? "#FFFFFF" : "#334155";
+        }
+    }, 300);
+    </script>
+    """,
+    height=0,
+    width=0
 )
 
 import psycopg2
