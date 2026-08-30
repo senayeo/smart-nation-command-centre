@@ -12,16 +12,35 @@ from assets import BASE64_IMAGE
 st.set_page_config(page_title="Smart Waste & Rodent Prevention Console", layout="wide", page_icon="📊", initial_sidebar_state="expanded")
 
 # INJECT THIS UPDATED CONFIGURATION STREAM TO WIPE THE GITHUB TOOLBAR COMPLETELY and VAPORISE THE BOTTOM RIGHT CORNER ENTIRELY
-# RESTORE NATIVE CONTAINER: Safely clears the layout blocks to force your left menu back instantly
 st.markdown(
     """
     <style>
-    /* Cleared styles to unblock the sidebar grid */
+    /* 1. VISUALLY WIPE OUT ONLY THE LOGOS AND BUTTONS FROM THE BAR */
+    [data-testid="stHeader"] button, 
+    [data-testid="stHeader"] a, 
+    .stAppDeployButton {
+        opacity: 0 !important;
+        visibility: hidden !important;
+        pointer-events: none !important;
+    }
+
+    /* 2. PROTECT THE STATUS CONTAINER SO THE LOADING TEXT DOES NOT CLIP IN HALF */
+    [data-testid="stHeader"] {
+        background-color: transparent !important;
+        height: auto !important;
+        min-height: 2.875rem !important;
+    }
+
+    /* Layout block container margins and column width constraints */
+    .block-container {padding-top: 2.0rem !important; padding-bottom: 1rem !important;}
+    h2 {margin-bottom: 0.5rem !important;}
+    .stSelectbox {margin-bottom: 0.4rem !important;}
+    hr {margin-top: 0.5rem !important; margin-bottom: 0.5rem !important;}
+    .alert-banner {padding: 7px 12px; border-radius: 4px; margin-bottom: 0px; font-family: Arial; font-size: 13px;}
     </style>
     """,
     unsafe_allow_html=True
 )
-
 
 import psycopg2
 
